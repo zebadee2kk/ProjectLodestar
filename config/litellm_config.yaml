@@ -1,3 +1,4 @@
+
 model_list:
   # ============================================
   # TIER 1: FREE LOCAL MODELS (Default)
@@ -51,7 +52,7 @@ model_list:
   # ============================================
   - model_name: gemini-pro
     litellm_params:
-      model: gemini/gemini-1.5-flash
+      model: gemini-1.5-flash
       api_key: os.environ/GEMINI_API_KEY
 
 router_settings:

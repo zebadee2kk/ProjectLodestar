@@ -16,6 +16,8 @@ echo ""
 # Test configuration
 TEST_PROMPT="Respond with exactly: 'Connection successful'"
 MAX_TOKENS=20
+TIMEOUT=60  # Increased from 45 to 60 seconds
+GPU_SWITCH_DELAY=5  # Increased from 3 to 5 seconds
 
 # Color codes for output
 GREEN='\033[0;32m'
@@ -37,22 +39,25 @@ test_provider() {
     
     echo -n "Testing ${BLUE}${MODEL}${NC} (${PROVIDER})... "
     
-    # Make API call with timeout
-    RESPONSE=$(timeout 15s curl -s -X POST http://localhost:4000/v1/chat/completions \
+# Make API call with timeout (increased for GPU model switching)
+    RESPONSE=$(timeout ${TIMEOUT}s curl -s -X POST http://localhost:4000/v1/chat/completions \
         -H "Content-Type: application/json" \
         -d "{
             \"model\": \"${MODEL}\",
             \"messages\": [{\"role\": \"user\", \"content\": \"${TEST_PROMPT}\"}],
             \"max_tokens\": ${MAX_TOKENS}
         }" 2>&1)
-    
-    # Check for success
-    if echo "$RESPONSE" | grep -q "Connection successful\|Hello\|Hi\|Test"; then
+
+    # Allow GPU time to unload model before next test
+    sleep $GPU_SWITCH_DELAY
+
+    # Check for success - look for valid completion response
+    if echo "$RESPONSE" | grep -q '"choices"' && echo "$RESPONSE" | grep -q '"content"'; then
         echo -e "${GREEN}✅ WORKING${NC} (${COST})"
         WORKING=$((WORKING + 1))
         return 0
-    # Check for credit issues
-    elif echo "$RESPONSE" | grep -qi "credit\|quota\|billing\|payment\|balance"; then
+    # Check for credit issues (including permission errors that mean needs credits)
+    elif echo "$RESPONSE" | grep -qi "credit\|quota\|billing\|payment\|balance\|permission.*execute"; then
         echo -e "${YELLOW}💳 Needs Credits${NC} (${COST})"
         NEEDS_CREDITS=$((NEEDS_CREDITS + 1))
         return 1

@@ -1,4 +1,11 @@
+![Status](https://img.shields.io/badge/status-operational-brightgreen)
+![Models](https://img.shields.io/badge/models-8%20providers-blue)
+![Cost](https://img.shields.io/badge/cost-90%25%20savings-success)
+![License](https://img.shields.io/badge/license-MIT-blue)
+
 # 🌟 Lodestar
+
+**AI-powered development environment with intelligent cost optimization**# 🌟 Lodestar
 
 **AI-powered development environment with intelligent cost optimization**
 

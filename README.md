@@ -83,3 +83,5 @@ MIT - see [LICENSE](LICENSE)
 ## Credits
 
 Built on: [Aider](https://aider.chat) • [LiteLLM](https://litellm.ai) • [Ollama](https://ollama.ai)
+
+✨ SSH authentication configured

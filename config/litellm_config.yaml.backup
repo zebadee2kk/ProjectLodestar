@@ -1,0 +1,28 @@
+model_list:
+  # FREE Local Models on T600 VM
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: ollama/deepseek-coder:6.7b
+      api_base: http://192.168.120.211:11434
+      
+  - model_name: local-llama
+    litellm_params:
+      model: ollama/llama3.1:8b
+      api_base: http://192.168.120.211:11434
+  
+  # PAID Claude Models (Updated to 4.5 series)
+  - model_name: claude-sonnet
+    litellm_params:
+      model: claude-sonnet-4-5-20250929  # Remove anthropic/ prefix
+      api_key: os.environ/ANTHROPIC_API_KEY
+      
+  - model_name: claude-opus
+    litellm_params:
+      model: anthropic/claude-opus-4-5-20251101
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+router_settings:
+  routing_strategy: simple-shuffle
+  num_retries: 3
+  timeout: 600
+  set_verbose: true

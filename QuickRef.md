@@ -1,34 +1,149 @@
+# 🚀 Lodestar Quick Reference
+
 ![Status](https://img.shields.io/badge/status-operational-brightgreen)
 ![Models](https://img.shields.io/badge/models-8%20providers-blue)
 ![Cost](https://img.shields.io/badge/cost-90%25%20savings-success)
 
-# Start your day
-cd ~/ProjectLodestar && ./scripts/quick-start.sh
+## Daily Workflow
 
-# Code with FREE AI
-aider file.py
-
-# Use Claude for complex work
-aider --model claude-sonnet file.py
-
-# Run tests
-./scripts/test-lodestar.sh
-
-# Check status
-./scripts/status.sh
-
-# Morning routine
+### Start Your Day
+```bash
 ssh lodestar@vm-lodestar-core
 cd ~/ProjectLodestar
-./scripts/quick-start.sh
-
-# Start coding with FREE AI
-cd ~/your-project
-aider file.py
-
-# Need more power? Switch to Claude
-aider --model claude-sonnet file.py
-
-# Check what's running
-cd ~/ProjectLodestar
 ./scripts/status.sh
+```
+
+### Start Coding (FREE Models)
+```bash
+cd ~/your-project
+aider file.py              # Uses DeepSeek automatically
+```
+
+### Switch to Premium AI
+```bash
+aider --model claude-sonnet file.py       # Claude Sonnet 4.5
+aider --model gpt-4o-mini file.py         # GPT-4o Mini
+aider --model grok-beta file.py           # Grok
+```
+
+### Mid-Session Model Switching
+```
+/model claude-sonnet       # Switch to Claude
+/model gpt-3.5-turbo       # Back to FREE DeepSeek
+/help                      # See all Aider commands
+```
+
+---
+
+## Model Selection Guide
+
+| Use Case | Recommended Model | Cost |
+|----------|------------------|------|
+| Standard coding, bug fixes | `gpt-3.5-turbo` (DeepSeek) | **FREE** |
+| Learning, experimentation | `local-llama` | **FREE** |
+| Complex architecture | `claude-sonnet` | $3-15/M tokens |
+| Critical production code | `claude-opus` | $15-75/M tokens |
+| Quick iterations | `gpt-4o-mini` | $0.15-0.60/M |
+| Creative solutions | `grok-beta` | $5-15/M |
+
+---
+
+## Common Commands
+
+### Router Management
+```bash
+./scripts/start-router.sh    # Start LiteLLM router
+./scripts/stop-router.sh     # Stop router
+./scripts/status.sh          # Check status
+```
+
+### Testing
+```bash
+./scripts/test-providers-simple.sh    # Quick provider test
+./scripts/test-all-providers.sh       # Comprehensive test
+./scripts/test-lodestar.sh            # Infrastructure test
+```
+
+### Git & SSH
+```bash
+git add .
+git commit -m "feat: description"
+git push origin main          # No password needed (SSH)
+```
+
+---
+
+## Troubleshooting
+
+### Router Not Responding
+```bash
+pkill -f litellm
+./scripts/start-router.sh
+```
+
+### T600 Ollama Down
+```bash
+curl http://192.168.120.211:11434/api/tags
+# If fails, check T600 VM
+```
+
+### Model Takes Too Long
+```bash
+# Switch to faster model
+/model gpt-3.5-turbo
+```
+
+### Check Logs
+```bash
+tail -100 ~/ProjectLodestar/.lodestar/router.log
+```
+
+---
+
+## Cost Tracking (Manual)
+
+Keep a simple log:
+```bash
+echo "$(date): Used Claude for complex refactor - ~10k tokens" >> ~/lodestar-costs.txt
+```
+
+---
+
+## Tips & Tricks
+
+1. **Default to FREE** - Start every session with DeepSeek
+2. **Escalate Strategically** - Switch to Claude only for hard problems
+3. **Use Git Messages** - Descriptive commits help track AI contributions
+4. **Test Often** - Run `./scripts/status.sh` regularly
+5. **Monitor Costs** - Check API dashboards monthly
+
+---
+
+## Emergency Contacts
+
+- **Router Log:** `~/ProjectLodestar/.lodestar/router.log`
+- **GitHub Issues:** https://github.com/zebadee2kk/ProjectLodestar/issues
+- **Documentation:** `~/ProjectLodestar/docs/`
+
+---
+
+**Quick Links:**
+- [Full Documentation](README.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](ROADMAP.md)
+```
+
+**Save:** `Ctrl+O`, `Enter`, `Ctrl+X`
+
+---
+
+## 🏷️ GitHub Project Description
+
+Copy this to GitHub project settings:
+```
+AI development environment with 90% cost savings. Routes between 8 LLM providers (Claude, OpenAI, Grok, Gemini) while defaulting to FREE local models (DeepSeek, Llama). Production-ready, automated testing, complete docs.
+```
+
+**Topics to add:**
+```
+ai, aider, litellm, ollama, deepseek, llama, cost-optimization, ai-coding, developer-tools, llm-proxy

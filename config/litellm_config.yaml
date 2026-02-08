@@ -46,12 +46,12 @@ model_list:
       model: xai/grok-beta
       api_key: os.environ/XAI_API_KEY
 
-  # ============================================
-  # TIER 5: GEMINI (Google API)
+# ============================================
+  # TIER 5: GEMINI (Google AI Studio)
   # ============================================
   - model_name: gemini-pro
     litellm_params:
-      model: gemini/gemini-2.0-flash-exp
+      model: gemini/gemini-1.5-flash
       api_key: os.environ/GEMINI_API_KEY
 
 router_settings:

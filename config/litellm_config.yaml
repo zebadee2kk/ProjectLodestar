@@ -1,5 +1,7 @@
 model_list:
-  # FREE Local Models on T600 VM
+  # ============================================
+  # TIER 1: FREE LOCAL MODELS (Default)
+  # ============================================
   - model_name: gpt-3.5-turbo
     litellm_params:
       model: ollama/deepseek-coder:6.7b
@@ -10,6 +12,50 @@ model_list:
       model: ollama/llama3.1:8b
       api_base: http://192.168.120.211:11434
 
+# ============================================
+  # TIER 2: CLAUDE (Anthropic API)
+  # ============================================
+  - model_name: claude-sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-4-5-20250929
+      api_key: os.environ/ANTHROPIC_API_KEY
+      
+  - model_name: claude-opus
+    litellm_params:
+      model: anthropic/claude-opus-4-5-20251101
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+# ============================================
+  # TIER 3: OPENAI (ChatGPT API)
+  # ============================================
+  - model_name: gpt-4o
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+      
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: openai/gpt-4o-mini
+      api_key: os.environ/OPENAI_API_KEY
+
+  # ============================================
+  # TIER 4: GROK (xAI API)
+  # ============================================
+  - model_name: grok-beta
+    litellm_params:
+      model: xai/grok-beta
+      api_key: os.environ/XAI_API_KEY
+
+  # ============================================
+  # TIER 5: GEMINI (Google API)
+  # ============================================
+  - model_name: gemini-pro
+    litellm_params:
+      model: gemini/gemini-2.0-flash-exp
+      api_key: os.environ/GEMINI_API_KEY
+
 router_settings:
+  routing_strategy: simple-shuffle
   num_retries: 3
   timeout: 600
+  set_verbose: true

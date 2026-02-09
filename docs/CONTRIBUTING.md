@@ -20,29 +20,35 @@ Thank you for your interest in contributing to Lodestar!
 
 ### Pull Requests
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
+**📖 See [BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md) for detailed workflow**
+
+1. Fork the repository (external contributors) or create a branch (team members)
+2. Create a feature branch following naming conventions:
+   - Humans: `human/<your-name>/<feature-name>`
+   - AI Agents: `ai/<agent-name>/<feature-name>`
 3. Make your changes
-4. Test thoroughly
+4. Test thoroughly (`pytest modules/tests/ -v`)
 5. Document in relevant .md files
 6. Create ADR if it's an architectural change
-7. Submit PR with clear description
+7. Submit PR to `develop` branch with clear description
 
-## Development Setup
+**Example:**
 ```bash
-# Clone your fork
-git clone https://github.com/YOUR_USERNAME/ProjectLodestar.git
-cd ProjectLodestar
+# Update develop
+git checkout develop
+git pull origin develop
 
-# Create a feature branch
-git checkout -b feature/your-feature
+# Create feature branch
+git checkout -b human/richard/new-feature
+# or for AI agents:
+git checkout -b ai/gemini/new-feature
 
-# Make changes and test
-./scripts/status.sh
-./scripts/quick-start.sh
+# Make changes, test, commit
+git add .
+git commit -m "feat: add new feature"
 
-# Commit with clear messages
-git commit -m "feat: add new routing strategy"
+# Push and create PR
+git push origin <your-branch>
 ```
 
 ## Code Style

@@ -48,6 +48,10 @@ class LodestarProxy:
         self.cost_tracker = CostTracker(self._costs_config)
         self.health_checker = HealthChecker(self._health_config, self.event_bus)
         self.fallback_executor = FallbackExecutor()
+        
+        # Initialize Cache
+        from modules.routing.cache import CacheManager
+        self.cache = CacheManager()
 
     def _load_configs(self) -> None:
         """Load module configurations from YAML files."""
@@ -124,6 +128,13 @@ class LodestarProxy:
         # Step 1: Classify
         task = task_override or self.router.classify_task(prompt)
 
+        # Step 1.5: Check Cache (if no overrides)
+        if not task_override and not model_override:
+            cached_response = self.cache.get(model="routeless", messages=[{"role": "user", "content": prompt}])
+            if cached_response:
+                logger.info("Serving from cache")
+                return cached_response
+
         # Step 2: Route
         model = model_override or self.router.route(prompt, task_override=task)
 
@@ -156,12 +167,29 @@ class LodestarProxy:
         }
         self.event_bus.publish("request_completed", event_data)
 
-        return {
+        result_dict = {
             "task": task,
             "model": actual_model,
             "result": result,
             "cost_entry": cost_entry,
         }
+        
+        # Step 6: Cache success (store serializable data only)
+        if result.success and not task_override and not model_override:
+            cacheable_data = {
+                "task": task,
+                "model": actual_model,
+                "cost_entry": cost_entry,
+                # Don't cache the full RequestResult, just the essential info
+                "success": True,
+            }
+            self.cache.set(
+                model="routeless", 
+                messages=[{"role": "user", "content": prompt}], 
+                response=cacheable_data
+            )
+            
+        return result_dict
 
     def health_check(self) -> Dict[str, Any]:
         """Return health status of all modules."""

@@ -1,0 +1,7 @@
+# Diff preview module configuration
+diff:
+  enabled: true
+  show_annotations: true
+  show_confidence: true
+  # Future: LLM-powered annotations
+  # annotation_model: gpt-3.5-turbo

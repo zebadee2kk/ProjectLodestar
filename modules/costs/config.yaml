@@ -1,0 +1,7 @@
+# Cost tracking module configuration
+costs:
+  enabled: true
+  database_path: ~/.lodestar/costs.db
+  baseline_model: claude-sonnet
+  budget_limit: null  # Set to dollar amount to enable alerts (e.g. 10.0)
+  retention_days: 90

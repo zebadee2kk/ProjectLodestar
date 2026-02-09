@@ -1,0 +1,28 @@
+# Routing module configuration
+routing:
+  enabled: true
+
+  # Task-to-model mapping (keyword-based classification)
+  routing_rules:
+    code_generation: gpt-3.5-turbo      # FREE - DeepSeek handles most coding
+    code_review: claude-sonnet            # PAID - needs deep reasoning
+    bug_fix: gpt-3.5-turbo               # FREE - pattern matching
+    architecture: claude-sonnet           # PAID - complex decisions
+    documentation: gpt-3.5-turbo          # FREE - straightforward
+    refactor: gpt-3.5-turbo              # FREE - mechanical changes
+    general: gpt-3.5-turbo               # FREE - default
+
+  # Fallback chains: if primary model fails, try these in order
+  fallback_chains:
+    claude-sonnet:
+      - gpt-4o-mini
+      - gpt-3.5-turbo
+    claude-opus:
+      - claude-sonnet
+      - gpt-4o
+      - gpt-3.5-turbo
+    gpt-3.5-turbo:
+      - local-llama
+    grok-beta:
+      - claude-sonnet
+      - gpt-3.5-turbo

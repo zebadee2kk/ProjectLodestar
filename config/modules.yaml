@@ -1,0 +1,15 @@
+# ProjectLodestar v2 Module Configuration
+#
+# Each module can be independently enabled/disabled here.
+# Module-specific settings are in their respective config.yaml files
+# under modules/<name>/config.yaml.
+
+modules:
+  routing:
+    enabled: true
+
+  costs:
+    enabled: true
+
+  diff:
+    enabled: true

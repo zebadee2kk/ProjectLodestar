@@ -126,6 +126,10 @@ aider --model claude-sonnet file.py
 
 ## 📚 Documentation
 
+- **[Branching Strategy](docs/BRANCHING_STRATEGY.md)** - Git Flow and collaboration (NEW)
+- **[Task Allocation](docs/TASK_ALLOCATION.md)** - Workstreams and assignments (NEW)
+- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - File map and onboarding (NEW)
+- **[Versioning](docs/VERSIONING.md)** - Release strategy (NEW)
 - **[Architecture](docs/ARCHITECTURE.md)** - System design and components
 - **[Setup Guide](docs/SETUP.md)** - Detailed installation instructions
 - **[Workflow](docs/WORKFLOW.md)** - Day-to-day usage patterns
@@ -133,7 +137,7 @@ aider --model claude-sonnet file.py
 - **[Security](docs/SECURITY.md)** - API key management best practices
 - **[Contributing](docs/CONTRIBUTING.md)** - Contribution guidelines
 - **[ADRs](docs/adr/)** - Architecture decision records
-- **[Roadmap](ROADMAP.md)** - Future enhancements (v2.0+)
+- **[Roadmap](ROADMAP.md)** - Future enhancements (v2.1+)
 
 ---
 
@@ -149,6 +153,12 @@ aider --model claude-sonnet file.py
 # Test All Providers
 ./scripts/test-providers-simple.sh
 ./scripts/test-all-providers.sh
+
+# v2.0 Features
+lodestar status              # Check health
+lodestar costs --dashboard   # Real-time cost TUI
+lodestar diff                # Visual AI diff
+lodestar run "python app.py" # Self-healing execution
 
 # Test Infrastructure
 ./scripts/test-lodestar.sh

@@ -122,3 +122,17 @@ class TestProxyCostTracking:
         proxy.handle_request("create a function")
         summary = proxy.cost_tracker.summary()
         assert summary["total_requests"] == 1
+
+    def test_token_counts_forwarded(self, proxy):
+        result = proxy.handle_request(
+            "write a function", tokens_in=5000, tokens_out=2000
+        )
+        entry = result["cost_entry"]
+        assert entry["tokens_in"] == 5000
+        assert entry["tokens_out"] == 2000
+
+    def test_token_counts_default_zero(self, proxy):
+        result = proxy.handle_request("simple prompt")
+        entry = result["cost_entry"]
+        assert entry["tokens_in"] == 0
+        assert entry["tokens_out"] == 0

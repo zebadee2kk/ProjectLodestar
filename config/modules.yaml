@@ -13,3 +13,6 @@ modules:
 
   diff:
     enabled: true
+
+  tournament:
+    enabled: true

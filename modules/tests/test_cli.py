@@ -27,6 +27,13 @@ class TestBuildParser:
         args = parser.parse_args(["status"])
         assert args.command == "status"
 
+    def test_parse_tournament(self):
+        parser = build_parser()
+        args = parser.parse_args(["tournament", "test prompt", "model-a", "model-b"])
+        assert args.command == "tournament"
+        assert args.prompt == "test prompt"
+        assert args.models == ["model-a", "model-b"]
+
     def test_no_command(self):
         parser = build_parser()
         args = parser.parse_args([])
@@ -50,6 +57,13 @@ class TestMainCLI:
         captured = capsys.readouterr()
         assert "Model:" in captured.out
         assert "Task:" in captured.out
+
+    def test_tournament_runs(self, capsys):
+        main(["tournament", "test prompt", "model-a", "model-b"])
+        captured = capsys.readouterr()
+        assert "Tournament Match" in captured.out
+        assert "model-a" in captured.out
+        assert "model-b" in captured.out
 
     def test_no_command_shows_help(self, capsys):
         with pytest.raises(SystemExit) as exc_info:

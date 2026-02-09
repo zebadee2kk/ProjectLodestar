@@ -8,10 +8,30 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Planned
-- Model tournament mode (side-by-side comparison)
 - LiteLLM callback hook for automatic cost recording
-- Retention cleanup job for cost storage
 - CSV/JSON export from cost storage
+- LLM-powered diff annotations (upgrade from heuristic)
+
+## [2.0.0-alpha.3] - 2026-02-09
+
+### Added
+- **Tournament:** `TournamentRunner` — side-by-side model comparison with
+  match execution, voting, draw support, leaderboard with win rates, and
+  formatted terminal output
+- **Cost storage:** `query_by_model()`, `query_by_date_range()`, `cleanup()`
+  retention purge, and `record_count()` on CostStorage
+- **Cost persistence:** CostTracker now auto-persists to SQLite when
+  `database_path` is configured — dual-layer (in-memory + durable)
+- **Proxy:** `handle_request()` accepts `tokens_in`/`tokens_out` params
+  for real token count forwarding from LiteLLM callbacks
+- **CLI:** `lodestar tournament "prompt" model1 model2` command
+
+### Fixed
+- CostStorage date range queries now use SQLite-compatible timestamp format
+
+### Metrics
+- 182 tests, 98% code coverage (+49 tests from alpha.2)
+- 6 new files, ~350 lines of new code
 
 ## [2.0.0-alpha.2] - 2026-02-09
 

@@ -145,3 +145,51 @@ class TestSummary:
         summary = tracker.summary()
         assert summary["by_model"]["gpt-3.5-turbo"]["requests"] == 2
         assert summary["by_model"]["claude-sonnet"]["requests"] == 1
+
+
+class TestStorageIntegration:
+
+    def test_records_persist_to_sqlite(self, tmp_path):
+        db_path = str(tmp_path / "costs.db")
+        t = CostTracker({
+            "enabled": True,
+            "database_path": db_path,
+            "baseline_model": "claude-sonnet",
+        })
+        t.start()
+        t.record("gpt-3.5-turbo", 1000, 500, task="bug_fix")
+        t.record("claude-sonnet", 2000, 1000, task="code_review")
+        assert t._storage.record_count() == 2
+        t.stop()
+
+    def test_storage_not_created_without_path(self, tracker_config):
+        t = CostTracker(tracker_config)
+        assert t._storage is None
+
+    def test_storage_survives_insert_error(self, tmp_path):
+        db_path = str(tmp_path / "costs.db")
+        t = CostTracker({
+            "enabled": True,
+            "database_path": db_path,
+            "baseline_model": "claude-sonnet",
+        })
+        t.start()
+        # Close the storage connection to force an error
+        t._storage.close()
+        # Should not raise — logs the error and continues
+        entry = t.record("gpt-3.5-turbo", 1000, 500)
+        assert entry["model"] == "gpt-3.5-turbo"
+        # In-memory record still stored
+        assert len(t._records) == 1
+
+    def test_stop_closes_storage(self, tmp_path):
+        db_path = str(tmp_path / "costs.db")
+        t = CostTracker({
+            "enabled": True,
+            "database_path": db_path,
+            "baseline_model": "claude-sonnet",
+        })
+        t.start()
+        assert t._storage._conn is not None
+        t.stop()
+        assert t._storage._conn is None

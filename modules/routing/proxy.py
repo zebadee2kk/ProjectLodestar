@@ -88,6 +88,8 @@ class LodestarProxy:
         request_fn: Any = None,
         task_override: Optional[str] = None,
         model_override: Optional[str] = None,
+        tokens_in: int = 0,
+        tokens_out: int = 0,
     ) -> Dict[str, Any]:
         """Process an LLM request through the full pipeline.
 
@@ -103,6 +105,8 @@ class LodestarProxy:
                         routing decision only (dry-run mode).
             task_override: Force a specific task classification.
             model_override: Force a specific model (bypasses routing).
+            tokens_in: Input token count (from LiteLLM callback).
+            tokens_out: Output token count (from LiteLLM callback).
 
         Returns:
             Dict with task, model, result, cost_entry keys.
@@ -124,11 +128,11 @@ class LodestarProxy:
             result = RequestResult(success=True, model=model, response=None)
             actual_model = model
 
-        # Step 4: Record cost (estimate with zero tokens in dry-run)
+        # Step 4: Record cost
         cost_entry = self.cost_tracker.record(
             model=actual_model,
-            tokens_in=0,
-            tokens_out=0,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
             task=task,
         )
 

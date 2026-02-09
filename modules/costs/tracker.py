@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional
 import logging
 
 from modules.base import LodestarPlugin
+from modules.costs.storage import CostStorage
 
 logger = logging.getLogger(__name__)
 
@@ -46,17 +47,27 @@ class CostTracker(LodestarPlugin):
         self.budget_limit: Optional[float] = config.get("budget_limit")
         self._records: list = []
         self._started = False
+        self._storage: Optional[CostStorage] = None
+
+        db_path = config.get("database_path")
+        if db_path:
+            self._storage = CostStorage(db_path)
 
     def start(self) -> None:
-        """Start the cost tracker."""
+        """Start the cost tracker and connect to storage if configured."""
         if not self.enabled:
             logger.info("Cost tracker disabled, skipping start")
             return
+        if self._storage:
+            self._storage.connect()
+            logger.info("Cost storage connected at %s", self._storage.db_path)
         self._started = True
         logger.info("Cost tracker started")
 
     def stop(self) -> None:
-        """Stop the cost tracker."""
+        """Stop the cost tracker and close storage."""
+        if self._storage:
+            self._storage.close()
         self._started = False
         logger.info("Cost tracker stopped")
 
@@ -114,6 +125,11 @@ class CostTracker(LodestarPlugin):
             "task": task,
         }
         self._records.append(entry)
+        if self._storage and self._storage._conn:
+            try:
+                self._storage.insert(entry)
+            except Exception:
+                logger.exception("Failed to persist cost record to storage")
         return entry
 
     def total_cost(self) -> float:

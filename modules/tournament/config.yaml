@@ -1,0 +1,11 @@
+# Model Tournament Configuration
+tournament:
+  enabled: true
+  # Default models to compare in tournaments
+  default_models:
+    - gpt-3.5-turbo
+    - local-llama
+  # Maximum number of models per match
+  max_models_per_match: 4
+  # Timeout per model request in seconds
+  request_timeout: 120

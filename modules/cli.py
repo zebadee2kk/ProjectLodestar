@@ -1,12 +1,13 @@
 """Lodestar v2 command-line interface.
 
-Provides commands for cost reporting, route testing, and module
-health checking. Uses argparse (stdlib) to avoid adding Click
-as a dependency.
+Provides commands for cost reporting, route testing, tournament
+matches, and module health checking. Uses argparse (stdlib) to
+avoid adding Click as a dependency.
 
 Usage:
     python -m modules.cli costs              # Show cost summary
     python -m modules.cli route "fix bug"    # Test routing decision
+    python -m modules.cli tournament "prompt" model1 model2  # Run tournament
     python -m modules.cli status             # Module health check
 """
 
@@ -16,6 +17,7 @@ from typing import List, Optional
 
 from modules.routing.proxy import LodestarProxy
 from modules.costs.reporter import format_summary
+from modules.tournament.runner import TournamentRunner
 
 
 def cmd_costs(proxy: LodestarProxy, args: argparse.Namespace) -> None:
@@ -56,6 +58,22 @@ def cmd_status(proxy: LodestarProxy, args: argparse.Namespace) -> None:
             print(f"  {module_name}: {status}")
 
 
+def cmd_tournament(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Run a tournament match between models (dry-run without API credits)."""
+    prompt = args.prompt
+    models = args.models
+
+    runner = TournamentRunner({"enabled": True, "default_models": models})
+    runner.start()
+
+    def dry_run_fn(model, prompt_text):
+        return f"[dry-run] {model} would respond to: {prompt_text[:50]}"
+
+    result = runner.run_match(prompt, dry_run_fn, models=models)
+    print(runner.format_match(result))
+    runner.stop()
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
@@ -73,6 +91,17 @@ def build_parser() -> argparse.ArgumentParser:
     )
     route_parser.add_argument(
         "prompt", nargs="+", help="The prompt to test routing for"
+    )
+
+    # tournament
+    tournament_parser = subparsers.add_parser(
+        "tournament", help="Run a tournament match between models"
+    )
+    tournament_parser.add_argument(
+        "prompt", help="The prompt to send to all models"
+    )
+    tournament_parser.add_argument(
+        "models", nargs="+", help="Models to compare (at least 2)"
     )
 
     # status
@@ -96,6 +125,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     commands = {
         "costs": cmd_costs,
         "route": cmd_route,
+        "tournament": cmd_tournament,
         "status": cmd_status,
     }
 

@@ -8,7 +8,13 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 import logging
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.syntax import Syntax
+
 from modules.base import LodestarPlugin
+from modules.diff.annotator import DiffAnnotator
+from modules.routing.proxy import LodestarProxy
 
 logger = logging.getLogger(__name__)
 
@@ -39,10 +45,14 @@ class DiffPreview(LodestarPlugin):
 
     Args:
         config: Module configuration.
+        proxy: Optional LodestarProxy for AI annotations.
     """
 
-    def __init__(self, config: Dict[str, Any]) -> None:
+    def __init__(self, config: Dict[str, Any], proxy: Optional[LodestarProxy] = None) -> None:
         super().__init__(config)
+        self.console = Console()
+        self.proxy = proxy
+        self.annotator = DiffAnnotator(proxy) if proxy else None
         self._started = False
 
     def start(self) -> None:
@@ -99,6 +109,31 @@ class DiffPreview(LodestarPlugin):
 
         return blocks
 
+    def annotate_diff(self, blocks: List[DiffBlock]) -> List[DiffBlock]:
+        """Annotate a list of diff blocks with AI explanations.
+
+        Args:
+            blocks: List of DiffBlocks to annotate.
+
+        Returns:
+            The same list of blocks, annotated in-place.
+        """
+        if not self.annotator:
+            logger.warning("Annotator not initialized, skipping annotation")
+            return blocks
+
+        for block in blocks:
+            # Skip large blocks to save costs/time, or very small/empty ones
+            if not block.lines or len(block.lines) > 50:
+                continue
+
+            annotation, confidence = self.annotator.annotate(
+                block.file_path, block.lines
+            )
+            self.annotate_block(block, annotation, confidence)
+
+        return blocks
+
     def annotate_block(
         self, block: DiffBlock, annotation: str, confidence: float
     ) -> DiffBlock:
@@ -123,28 +158,39 @@ class DiffPreview(LodestarPlugin):
         block.confidence = confidence
         return block
 
-    def format_block(self, block: DiffBlock) -> str:
-        """Format a DiffBlock as a readable string with optional annotation.
+    def render(self, blocks: List[DiffBlock]) -> None:
+        """Render diff blocks to the console using Rich.
 
         Args:
-            block: The DiffBlock to format.
-
-        Returns:
-            Formatted string representation.
+            blocks: List of annotated DiffBlocks.
         """
-        header = f"--- {block.file_path} (lines {block.old_start}→{block.new_start})"
-        parts = [header]
-
-        for line in block.lines:
-            parts.append(f"  {line}")
-
-        if block.annotation:
-            conf_str = (
-                f" [{block.confidence:.0%}]" if block.confidence is not None else ""
+        for block in blocks:
+            # Create content string for syntax highlighting
+            # We strip the +/- markers for the syntax view, but keep them for diff view
+            # For a proper diff view with Rich, we might valid code.
+            # Simplified approach: Render raw lines, colored by diff type
+            
+            content = Panel(
+                self._build_renderable_content(block),
+                title=f"{block.file_path} (L{block.old_start} -> L{block.new_start})",
+                subtitle=f"AI: {block.annotation}" if block.annotation else None,
+                border_style="blue" if block.annotation else "dim",
+                expand=False
             )
-            parts.append(f"  # AI{conf_str}: {block.annotation}")
+            self.console.print(content)
+            self.console.print("") # spacing
 
-        return "\n".join(parts)
+    def _build_renderable_content(self, block: DiffBlock) -> str:
+        """Helper to build text content for a block."""
+        output = []
+        for line in block.lines:
+            if line.startswith("+"):
+                output.append(f"[green]{line}[/green]")
+            elif line.startswith("-"):
+                output.append(f"[red]{line}[/red]")
+            else:
+                output.append(f"[dim]{line}[/dim]")
+        return "\n".join(output)
 
     @staticmethod
     def _parse_hunk_header(header: str) -> tuple:
@@ -156,9 +202,13 @@ class DiffPreview(LodestarPlugin):
         Returns:
             Tuple of (old_start, new_start).
         """
-        # Strip @@ markers and any trailing context
-        parts = header.split("@@")[1].strip()
-        ranges = parts.split()
-        old_start = int(ranges[0].split(",")[0].lstrip("-"))
-        new_start = int(ranges[1].split(",")[0].lstrip("+"))
-        return old_start, new_start
+        try:
+            # Strip @@ markers and any trailing context
+            parts = header.split("@@")[1].strip()
+            ranges = parts.split()
+            old_start = int(ranges[0].split(",")[0].lstrip("-"))
+            new_start = int(ranges[1].split(",")[0].lstrip("+"))
+            return old_start, new_start
+        except (IndexError, ValueError):
+            # Fallback for malformed headers
+            return 0, 0

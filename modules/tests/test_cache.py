@@ -4,17 +4,13 @@ import shutil
 from modules.routing.cache import CacheManager
 
 class TestCacheManager:
-    TEST_DB = ".lodestar/test_cache.db"
-
     @pytest.fixture
-    def cache(self):
-        if os.path.exists(".lodestar"):
-            shutil.rmtree(".lodestar")
-        cache = CacheManager(db_path=self.TEST_DB)
+    def cache(self, tmp_path):
+        """Create a cache instance with a temporary database."""
+        db_path = tmp_path / "test_cache.db"
+        cache = CacheManager(db_path=str(db_path))
         yield cache
         cache.close()
-        if os.path.exists(".lodestar"):
-            shutil.rmtree(".lodestar")
 
     def test_set_get(self, cache):
         model = "gpt-4o"

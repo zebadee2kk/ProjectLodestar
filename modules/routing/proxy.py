@@ -160,12 +160,19 @@ class LodestarProxy:
             "cost_entry": cost_entry,
         }
         
-        # Step 6: Cache success
+        # Step 6: Cache success (store serializable data only)
         if result.success and not task_override and not model_override:
+            cacheable_data = {
+                "task": task,
+                "model": actual_model,
+                "cost_entry": cost_entry,
+                # Don't cache the full RequestResult, just the essential info
+                "success": True,
+            }
             self.cache.set(
                 model="routeless", 
                 messages=[{"role": "user", "content": prompt}], 
-                response=result_dict
+                response=cacheable_data
             )
             
         return result_dict

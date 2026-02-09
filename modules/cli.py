@@ -19,6 +19,17 @@ from modules.routing.proxy import LodestarProxy
 from modules.costs.reporter import format_summary
 
 
+def cmd_costs(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Show cost summary or launch dashboard."""
+    if args.dashboard:
+        from modules.costs.dashboard import CostDashboard
+        dashboard = CostDashboard(proxy.cost_tracker)
+        dashboard.run()
+    else:
+        summary = proxy.cost_tracker.summary()
+        print(format_summary(summary))
+
+
 def cmd_run(proxy: LodestarProxy, args: argparse.Namespace) -> None:
     """Run a command with self-healing capabilities."""
     from modules.agent import AgentExecutor

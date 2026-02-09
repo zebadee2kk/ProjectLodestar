@@ -44,6 +44,10 @@ class LodestarProxy:
         self.router = SemanticRouter(self._routing_config)
         self.cost_tracker = CostTracker(self._costs_config)
         self.fallback_executor = FallbackExecutor()
+        
+        # Initialize Cache
+        from modules.routing.cache import CacheManager
+        self.cache = CacheManager()
 
     def _load_configs(self) -> None:
         """Load module configurations from YAML files."""
@@ -110,6 +114,13 @@ class LodestarProxy:
         # Step 1: Classify
         task = task_override or self.router.classify_task(prompt)
 
+        # Step 1.5: Check Cache (if no overrides)
+        if not task_override and not model_override:
+            cached_response = self.cache.get(model="routeless", messages=[{"role": "user", "content": prompt}])
+            if cached_response:
+                logger.info("Serving from cache")
+                return cached_response
+
         # Step 2: Route
         model = model_override or self.router.route(prompt, task_override=task)
 
@@ -142,12 +153,22 @@ class LodestarProxy:
         }
         self.event_bus.publish("request_completed", event_data)
 
-        return {
+        result_dict = {
             "task": task,
             "model": actual_model,
             "result": result,
             "cost_entry": cost_entry,
         }
+        
+        # Step 6: Cache success
+        if result.success and not task_override and not model_override:
+            self.cache.set(
+                model="routeless", 
+                messages=[{"role": "user", "content": prompt}], 
+                response=result_dict
+            )
+            
+        return result_dict
 
     def health_check(self) -> Dict[str, Any]:
         """Return health status of all modules."""

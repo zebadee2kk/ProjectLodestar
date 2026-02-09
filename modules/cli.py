@@ -42,6 +42,19 @@ def cmd_run(proxy: LodestarProxy, args: argparse.Namespace) -> None:
             print(f"  {i+1}. `{cmd}` -> {out[:100]}...")
 
 
+def cmd_cache(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Manage response cache."""
+    if args.clear:
+        count = proxy.cache.clear()
+        print(f"Cache cleared. Removed {count} entries.")
+    else:
+        stats = proxy.cache.stats()
+        print("=== Cache Stats ===")
+        print(f"Entries: {stats['entries']}")
+        print(f"Size:    {stats['size_bytes']} bytes")
+        print(f"Path:    {stats['db_path']}")
+
+
 def cmd_route(proxy: LodestarProxy, args: argparse.Namespace) -> None:
     """Test routing decision for a prompt."""
     prompt = " ".join(args.prompt)
@@ -144,6 +157,12 @@ def build_parser() -> argparse.ArgumentParser:
         "command", nargs="+", help="The command to run"
     )
 
+    # cache
+    cache_parser = subparsers.add_parser("cache", help="Manage response cache")
+    cache_parser.add_argument(
+        "--clear", action="store_true", help="Clear all cache entries"
+    )
+
     # status
     subparsers.add_parser("status", help="Show module health status")
 
@@ -179,6 +198,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         "status": cmd_status,
         "diff": cmd_diff,
         "run": cmd_run,
+        "cache": cmd_cache,
     }
 
     try:

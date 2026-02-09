@@ -13,7 +13,10 @@ from pathlib import Path
 from modules.base import EventBus
 from modules.routing.router import SemanticRouter
 from modules.routing.fallback import FallbackExecutor, RequestResult
+from modules.routing.router import SemanticRouter
+from modules.routing.fallback import FallbackExecutor, RequestResult
 from modules.costs.tracker import CostTracker
+from modules.health.checker import HealthChecker
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,7 @@ class LodestarProxy:
 
         self.router = SemanticRouter(self._routing_config)
         self.cost_tracker = CostTracker(self._costs_config)
+        self.health_checker = HealthChecker(self._health_config, self.event_bus)
         self.fallback_executor = FallbackExecutor()
 
     def _load_configs(self) -> None:
@@ -70,16 +74,26 @@ class LodestarProxy:
         else:
             self._costs_config = {"enabled": True}
 
+        health_yaml = self.config_dir.parent / "modules" / "health" / "config.yaml"
+        if health_yaml.exists():
+            with open(health_yaml) as f:
+                raw = yaml.safe_load(f) or {}
+                self._health_config = raw.get("health", {"enabled": True})
+        else:
+            self._health_config = {"enabled": True}
+
     def start(self) -> None:
         """Start all modules."""
         self.router.start()
         self.cost_tracker.start()
+        self.health_checker.start()
         logger.info("LodestarProxy started")
 
     def stop(self) -> None:
         """Stop all modules gracefully."""
         self.router.stop()
         self.cost_tracker.stop()
+        self.health_checker.stop()
         logger.info("LodestarProxy stopped")
 
     def handle_request(
@@ -155,4 +169,5 @@ class LodestarProxy:
             "proxy": "healthy",
             "router": self.router.health_check(),
             "cost_tracker": self.cost_tracker.health_check(),
+            "health_checker": self.health_checker.health_check(),
         }

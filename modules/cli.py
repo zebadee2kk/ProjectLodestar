@@ -47,8 +47,15 @@ def cmd_status(proxy: LodestarProxy, args: argparse.Namespace) -> None:
     """Show module health status."""
     health = proxy.health_check()
     print("=== Lodestar Module Status ===")
+    
+    # Flatten the display
     for module_name, status in health.items():
-        if isinstance(status, dict):
+        if module_name == "health_checker" and isinstance(status, dict):
+            # Special handling for our new HealthChecker detailed output
+            print(f"  {module_name}: {status.get('status', 'unknown')}")
+            for comp, details in status.get("components", {}).items():
+                print(f"    - {comp}: {details.get('status', 'unknown')} ({details.get('latency_ms', '?')}ms)")
+        elif isinstance(status, dict):
             state = status.get("status", "unknown")
             enabled = status.get("enabled", "?")
             print(f"  {module_name}: {state} (enabled={enabled})")

@@ -17,9 +17,9 @@
 ### 🎯 High Priority
 
 **Cost Analytics & Tracking**
-- [ ] Usage dashboard (tokens, cost per project/model)
-- [ ] Monthly cost reports
-- [ ] Budget alerts and limits
+- [x] Usage dashboard (tokens, cost per project/model) (`lodestar costs --dashboard`)
+- [x] Monthly cost reports
+- [x] Budget alerts and limits
 - [ ] Model recommendation engine (cheapest for task)
 - **Value:** Visibility into actual savings
 - **Effort:** Medium
@@ -35,10 +35,10 @@
 - **ADR:** Caching strategy
 
 **Health Monitoring**
-- [ ] Router health endpoint (/health)
+- [x] Router health endpoint (/health) (`lodestar status`)
 - [ ] T600 GPU utilization monitoring
 - [ ] Provider availability dashboard
-- [ ] Automatic fallback on failure
+- [x] Automatic fallback on failure (`AgentExecutor` + `FallbackExecutor`)
 - **Value:** Production reliability
 - **Effort:** Medium
 

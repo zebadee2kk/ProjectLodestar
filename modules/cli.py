@@ -19,15 +19,27 @@ from modules.routing.proxy import LodestarProxy
 from modules.costs.reporter import format_summary
 
 
-def cmd_costs(proxy: LodestarProxy, args: argparse.Namespace) -> None:
-    """Show cost summary report or interactive dashboard."""
-    if args.dashboard:
-        from modules.costs.dashboard import CostDashboard
-        dashboard = CostDashboard(proxy.cost_tracker)
-        dashboard.run()
+def cmd_run(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Run a command with self-healing capabilities."""
+    from modules.agent import AgentExecutor
+    import shlex
+
+    # Join the command parts if it's a list
+    command = " ".join(args.command)
+    print(f"Running command: {command}")
+    
+    executor = AgentExecutor(proxy)
+    result = executor.run_command(command)
+    
+    if result["success"]:
+        print("Command succeeded!")
+        print(result["output"])
     else:
-        summary = proxy.cost_tracker.summary()
-        print(format_summary(summary))
+        print("Command failed after retries.")
+        print(f"Last error: {result['error']}")
+        print("Attempt history:")
+        for i, (cmd, out) in enumerate(result["attempts"]):
+            print(f"  {i+1}. `{cmd}` -> {out[:100]}...")
 
 
 def cmd_route(proxy: LodestarProxy, args: argparse.Namespace) -> None:
@@ -131,6 +143,14 @@ def build_parser() -> argparse.ArgumentParser:
         "prompt", nargs="+", help="The prompt to test routing for"
     )
 
+    # run
+    run_parser = subparsers.add_parser(
+        "run", help="Run a command with self-healing"
+    )
+    run_parser.add_argument(
+        "command", nargs="+", help="The command to run"
+    )
+
     # status
     subparsers.add_parser("status", help="Show module health status")
 
@@ -165,6 +185,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         "route": cmd_route,
         "status": cmd_status,
         "diff": cmd_diff,
+        "run": cmd_run,
     }
 
     try:

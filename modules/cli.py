@@ -8,6 +8,7 @@ Usage:
     python -m modules.cli costs              # Show cost summary
     python -m modules.cli route "fix bug"    # Test routing decision
     python -m modules.cli status             # Module health check
+    python -m modules.cli diff               # AI-enhanced visual diff
 """
 
 import argparse
@@ -63,6 +64,46 @@ def cmd_status(proxy: LodestarProxy, args: argparse.Namespace) -> None:
             print(f"  {module_name}: {status}")
 
 
+def cmd_diff(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Show AI-enhanced visual diff."""
+    from modules.diff import DiffPreview
+    import subprocess
+
+    # Get diff from git
+    # If args.files are provided, limit to those files
+    cmd = ["git", "diff"] + args.files
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+        diff_text = result.stdout
+    except subprocess.CalledProcessError as e:
+        print(f"Error running git diff: {e}")
+        return
+
+    if not diff_text:
+        print("No changes detected.")
+        return
+
+    # Initialize DiffPreview with proxy
+    # We pass an empty config for now as we don't have persistence for this module yet
+    preview = DiffPreview(config={"enabled": True}, proxy=proxy)
+    preview.start()
+
+    # Parse and Render
+    try:
+        blocks = preview.parse_unified_diff(diff_text)
+        
+        # Annotate if not disabled
+        if not args.no_ai:
+            print("Generating AI annotations... (Ctrl+C to skip)")
+            blocks = preview.annotate_diff(blocks)
+
+        preview.render(blocks)
+    except KeyboardInterrupt:
+        print("\nOperation cancelled.")
+    finally:
+        preview.stop()
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
@@ -85,6 +126,17 @@ def build_parser() -> argparse.ArgumentParser:
     # status
     subparsers.add_parser("status", help="Show module health status")
 
+    # diff
+    diff_parser = subparsers.add_parser(
+        "diff", help="Show AI-enhanced visual diff"
+    )
+    diff_parser.add_argument(
+        "files", nargs="*", help="Specific files to diff"
+    )
+    diff_parser.add_argument(
+        "--no-ai", action="store_true", help="Disable AI annotations"
+    )
+
     return parser
 
 
@@ -104,6 +156,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         "costs": cmd_costs,
         "route": cmd_route,
         "status": cmd_status,
+        "diff": cmd_diff,
     }
 
     try:

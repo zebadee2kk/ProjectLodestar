@@ -1,7 +1,7 @@
-# Use Whole Edit Format for Small Local Models
+# ADR-0002: Use Whole Edit Format for Small Local Models
 
-**Status:** Accepted  
-**Date:** 2026-02-08  
+**Status:** Accepted
+**Date:** 2026-02-08
 **Deciders:** Lodestar Team
 
 ## Context
@@ -34,16 +34,16 @@ edit-format: whole  # Works reliably with small models
 ## Consequences
 
 ### Positive
-- ✅ 100% success rate with DeepSeek Coder
-- ✅ Files created on first attempt
-- ✅ Simpler prompts required
-- ✅ More forgiving of model errors
-- ✅ Proven to work in automated tests
+- 100% success rate with DeepSeek Coder
+- Files created on first attempt
+- Simpler prompts required
+- More forgiving of model errors
+- Proven to work in automated tests
 
 ### Negative
-- ⚠️ Entire files rewritten (more tokens used)
-- ⚠️ Can't make surgical edits to large files
-- ⚠️ Diffs in git history show full file changes
+- Entire files rewritten (more tokens used)
+- Can't make surgical edits to large files
+- Diffs in git history show full file changes
 
 ### Neutral
 - For small files (<500 lines), token difference is negligible
@@ -61,30 +61,4 @@ edit-format: whole  # Works reliably with small models
 - Use default `whole` format for FREE local models
 
 **Alternative considered:**
-- Training/fine-tuning local models - rejected (too complex, defeats "avoid complexity" goal)# Use Whole Edit Format for Small Local Models
-
-**Status:** Proposed  
-**Date:** 2026-02-08  
-**Deciders:** Lodestar Team
-
-## Context
-
-What is the issue we're seeing that motivates this decision?
-
-## Decision
-
-What change are we proposing/making?
-
-## Consequences
-
-### Positive
-- 
-
-### Negative
-- 
-
-### Neutral
-- 
-
-## Implementation Notes
-
+- Training/fine-tuning local models - rejected (too complex, defeats "avoid complexity" goal)

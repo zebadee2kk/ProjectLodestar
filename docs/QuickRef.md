@@ -128,22 +128,6 @@ echo "$(date): Used Claude for complex refactor - ~10k tokens" >> ~/lodestar-cos
 ---
 
 **Quick Links:**
-- [Full Documentation](README.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Roadmap](ROADMAP.md)
-```
-
-**Save:** `Ctrl+O`, `Enter`, `Ctrl+X`
-
----
-
-## 🏷️ GitHub Project Description
-
-Copy this to GitHub project settings:
-```
-AI development environment with 90% cost savings. Routes between 8 LLM providers (Claude, OpenAI, Grok, Gemini) while defaulting to FREE local models (DeepSeek, Llama). Production-ready, automated testing, complete docs.
-```
-
-**Topics to add:**
-```
-ai, aider, litellm, ollama, deepseek, llama, cost-optimization, ai-coding, developer-tools, llm-proxy
+- [Full Documentation](../README.md)
+- [Architecture](ARCHITECTURE.md)
+- [Roadmap](../ROADMAP.md)

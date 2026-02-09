@@ -74,10 +74,9 @@ ProjectLodestar is a **production-ready AI development environment** that achiev
 ```
 ProjectLodestar/
 ├── README.md                    # Main documentation
-├── QuickRef.md                  # Quick reference guide
 ├── ROADMAP.md                   # v2 planning
 ├── LICENSE                      # MIT License
-├── .gitignore                   # Protects API keys, logs
+├── .gitignore                   # Protects API keys, logs, Python artifacts
 │
 ├── config/
 │   └── litellm_config.yaml      # 8 provider configurations
@@ -98,7 +97,14 @@ ProjectLodestar/
 │   ├── WORKFLOW.md              # Usage patterns
 │   ├── SECURITY.md              # API key management
 │   ├── CONTRIBUTING.md          # Contribution guidelines
-│   └── adr/                     # 7 Architecture Decision Records
+│   ├── QuickRef.md              # Quick reference guide
+│   └── adr/                     # 3 Architecture Decision Records
+│
+├── .claude/                     # AI development context
+│   ├── PROJECT_INSTRUCTIONS.md  # v2 development guidelines
+│   ├── ARCHITECTURE_PRINCIPLES.md # Design philosophy
+│   ├── MODULE_TEMPLATE.md       # Module scaffolding template
+│   └── V2_HANDOVER.md           # v2 planning handover
 │
 └── .lodestar/                   # Runtime (not in git)
     ├── router.log               # LiteLLM logs

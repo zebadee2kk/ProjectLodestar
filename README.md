@@ -129,7 +129,9 @@ aider --model claude-sonnet file.py
 - **[Architecture](docs/ARCHITECTURE.md)** - System design and components
 - **[Setup Guide](docs/SETUP.md)** - Detailed installation instructions
 - **[Workflow](docs/WORKFLOW.md)** - Day-to-day usage patterns
+- **[Quick Reference](docs/QuickRef.md)** - Daily commands cheat sheet
 - **[Security](docs/SECURITY.md)** - API key management best practices
+- **[Contributing](docs/CONTRIBUTING.md)** - Contribution guidelines
 - **[ADRs](docs/adr/)** - Architecture decision records
 - **[Roadmap](ROADMAP.md)** - Future enhancements (v2.0+)
 
@@ -200,7 +202,7 @@ Contributions welcome! Please:
 4. Write/update tests
 5. Submit a pull request
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details.
 
 ---
 

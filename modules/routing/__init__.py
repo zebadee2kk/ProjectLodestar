@@ -5,5 +5,7 @@ classification, tag-based rules, and configurable fallback chains.
 """
 
 from modules.routing.router import SemanticRouter
+from modules.routing.fallback import FallbackExecutor
+from modules.routing.proxy import LodestarProxy
 
-__all__ = ["SemanticRouter"]
+__all__ = ["SemanticRouter", "FallbackExecutor", "LodestarProxy"]

@@ -20,9 +20,14 @@ from modules.costs.reporter import format_summary
 
 
 def cmd_costs(proxy: LodestarProxy, args: argparse.Namespace) -> None:
-    """Show cost summary report."""
-    summary = proxy.cost_tracker.summary()
-    print(format_summary(summary))
+    """Show cost summary report or interactive dashboard."""
+    if args.dashboard:
+        from modules.costs.dashboard import CostDashboard
+        dashboard = CostDashboard(proxy.cost_tracker)
+        dashboard.run()
+    else:
+        summary = proxy.cost_tracker.summary()
+        print(format_summary(summary))
 
 
 def cmd_route(proxy: LodestarProxy, args: argparse.Namespace) -> None:
@@ -113,7 +118,10 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # costs
-    subparsers.add_parser("costs", help="Show cost summary report")
+    cost_parser = subparsers.add_parser("costs", help="Show cost summary report")
+    cost_parser.add_argument(
+        "--dashboard", "-d", action="store_true", help="Launch interactive TUI dashboard"
+    )
 
     # route
     route_parser = subparsers.add_parser(

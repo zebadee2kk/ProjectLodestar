@@ -150,6 +150,12 @@ aider --model claude-sonnet file.py
 ./scripts/test-providers-simple.sh
 ./scripts/test-all-providers.sh
 
+# v2.0 Features
+lodestar status              # Check health
+lodestar costs --dashboard   # Real-time cost TUI
+lodestar diff                # Visual AI diff
+lodestar run "python app.py" # Self-healing execution
+
 # Test Infrastructure
 ./scripts/test-lodestar.sh
 

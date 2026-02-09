@@ -13,6 +13,19 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Retention cleanup job for cost storage
 - CSV/JSON export from cost storage
 
+## [2.0.0-beta.1] - 2026-02-09
+
+### Added
+- **Health:** `lodestar status` CLI command for module health verification.
+- **Costs:** `lodestar costs --dashboard` interactive TUI for real-time cost tracking using `rich`.
+- **Diff:** `lodestar diff` visual diff tool with syntax highlighting and AI-powered explanations.
+- **Agent:** `lodestar run <cmd>` self-healing command executor that automatically fixes errors using an LLM loop.
+- **Deps:** Added `rich` dependency for TUI and formatting.
+
+### Changed
+- All modules now integrated via `LodestarProxy`.
+- Unified `modules.cli` entry point.
+
 ## [2.0.0-alpha.2] - 2026-02-09
 
 ### Added

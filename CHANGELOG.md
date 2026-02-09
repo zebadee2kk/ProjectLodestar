@@ -8,10 +8,36 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Planned
+- Model warm-up on router start
+- Connection pooling for T600
+- GPU model-switch optimization
 - Model tournament mode (side-by-side comparison)
 - LiteLLM callback hook for automatic cost recording
 - Retention cleanup job for cost storage
 - CSV/JSON export from cost storage
+
+## [2.1.0-alpha.1] - 2026-02-09
+
+### Added
+- **Cache:** `lodestar cache` CLI commands for cache management
+- **Cache:** SQLite-based response caching with 24-hour TTL
+- **Cache:** Automatic cache hit/miss tracking
+- **Docs:** Comprehensive branching strategy (Git Flow)
+- **Docs:** Task allocation with 7 parallel workstreams
+- **Docs:** Versioning strategy document
+- **Docs:** Developer onboarding guide
+- **Docs:** ADR-0009 for response caching architecture
+
+### Changed
+- Integrated response caching into `LodestarProxy`
+- Updated CLI to include cache commands
+- Established `develop` branch as integration point
+- Merged all v2.0-beta.1 features into `develop`
+
+### Fixed
+- Missing `cmd_costs` function in CLI
+- Cache serialization bug with RequestResult objects
+- Test isolation issues with tmp_path
 
 ## [2.0.0-beta.1] - 2026-02-09
 

@@ -284,7 +284,7 @@ def build_parser() -> argparse.ArgumentParser:
         "run", help="Run a command with self-healing"
     )
     run_parser.add_argument(
-        "command", nargs="+", help="The command to run"
+        "command", nargs=argparse.REMAINDER, help="The command to run"
     )
 
     # cache

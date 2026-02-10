@@ -98,8 +98,16 @@ class AgentExecutor:
             )
             
             if response["result"].success and response["result"].response:
+                # Handle LiteLLM ModelResponse or raw string
+                res = response["result"].response
+                if hasattr(res, "choices"):
+                    fix = res.choices[0].message.content.strip()
+                elif isinstance(res, str):
+                    fix = res.strip()
+                else:
+                    fix = str(res).strip()
+                
                 # Naive cleanup of code blocks if present
-                fix = response["result"].response.strip()
                 fix = fix.replace("```bash", "").replace("```", "").strip()
                 return fix
             return None

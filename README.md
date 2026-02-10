@@ -1,7 +1,7 @@
 ![Version](https://img.shields.io/badge/version-2.1.0--alpha.1-orange)
 ![Status](https://img.shields.io/badge/status-active_development-blue)
 ![Branch](https://img.shields.io/badge/branch-develop-purple)
-![Tests](https://img.shields.io/badge/tests-41_passed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-296_passed-brightgreen)
 
 # 🌟 Lodestar
 
@@ -131,18 +131,23 @@ aider --model claude-sonnet file.py
 
 ## 📚 Documentation
 
+### 🛠️ Core Guides
+- **[Agent Guidelines](docs/AGENT_GUIDELINES.md)** - Rules for AI collaboration (NEW)
+- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - File map and onboarding (NEW)
 - **[Branching Strategy](docs/BRANCHING_STRATEGY.md)** - Git Flow and collaboration (NEW)
 - **[Task Allocation](docs/TASK_ALLOCATION.md)** - Workstreams and assignments (NEW)
-- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - File map and onboarding (NEW)
-- **[Versioning](docs/VERSIONING.md)** - Release strategy (NEW)
-- **[Architecture](docs/ARCHITECTURE.md)** - System design and components
+
+### 🏗️ Architecture & Design
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and v2 modules
 - **[Setup Guide](docs/SETUP.md)** - Detailed installation instructions
-- **[Workflow](docs/WORKFLOW.md)** - Day-to-day usage patterns
-- **[Quick Reference](docs/QuickRef.md)** - Daily commands cheat sheet
-- **[Security](docs/SECURITY.md)** - API key management best practices
-- **[Contributing](docs/CONTRIBUTING.md)** - Contribution guidelines
 - **[ADRs](docs/adr/)** - Architecture decision records
+- **[Versioning](docs/VERSIONING.md)** - Release strategy
+
+### 📖 References
+- **[Quick Reference](docs/QuickRef.md)** - Daily commands cheat sheet
+- **[Workflow](docs/WORKFLOW.md)** - Day-to-day usage patterns
 - **[Roadmap](ROADMAP.md)** - Future enhancements (v2.1+)
+- **[Changelog](CHANGELOG.md)** - Version history
 
 ---
 

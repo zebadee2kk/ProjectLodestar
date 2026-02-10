@@ -5,48 +5,49 @@
 Lodestar is an AI-assisted development environment that optimizes costs by intelligently routing requests between free local models and paid cloud APIs while maintaining context and decision history.
 
 ## System Components
+
+### V1: External Integration Layer
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                     Developer Interface                       │
-│                  (Terminal / Command Line)                    │
-└────────────────┬─────────────────────────────────────────────┘
-                 │
-                 │ Natural language commands
-                 │
-┌────────────────▼─────────────────────────────────────────────┐
-│                         Aider                                 │
-│  • AI pair programming agent                                  │
-│  • Reads/writes code files                                    │
-│  • Manages git commits                                        │
-│  • Maintains repository context                               │
-└────────────────┬─────────────────────────────────────────────┘
-                 │
-                 │ OpenAI-compatible API calls
-                 │
-┌────────────────▼─────────────────────────────────────────────┐
-│                    LiteLLM Router                             │
-│                   (localhost:4000)                            │
-│                                                               │
-│  • Unified API gateway                                        │
-│  • Model routing logic                                        │
-│  • Cost tracking                                              │
-│  • Fallback handling                                          │
-│  • Request/response logging                                   │
-└──────┬──────────────────────────┬────────────────────────────┘
-       │                          │
-       │ Free Models              │ Paid Models
-       │                          │
-┌──────▼──────────┐      ┌───────▼──────────┐
-│  Ollama Server  │      │   Claude API     │
-│  (T600 VM)      │      │  (Anthropic)     │
-│                 │      │                  │
-│  • deepseek     │      │  • Sonnet 4.5    │
-│    -coder:6.7b  │      │  • Opus 4.6      │
-│  • llama3.1:8b  │      │                  │
-│                 │      │  Rate Limited    │
-│  Unlimited      │      │  Usage Tracking  │
-└─────────────────┘      └──────────────────┘
+┌─────────────────┐
+│  Aider (CLI)    │  ← Developer interface
+└────────┬────────┘
+         ▼
+┌─────────────────┐
+│  LiteLLM Router │  ← Universal API gateway
+└────────┬────────┘
+         │
+    ┌────┴─────────────────────────┐
+    │                               │
+    ▼                               ▼
+┌──────────────┐           ┌──────────────┐
+│ FREE Models  │           │ PAID APIs    │
+└──────────────┘           └──────────────┘
 ```
+
+### V2: Internal Intelligence Layer
+The **Lodestar Modular System** (found in `modules/`) provides deep integration, monitoring, and self-healing.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       LodestarProxy                         │
+│           (Orchestrator for all sub-modules)                │
+└──────┬──────────┬──────────┬──────────┬──────────┬──────────┘
+       │          │          │          │          │
+       ▼          ▼          ▼          ▼          ▼
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+│ Semantic │ │   Cost   │ │ AI Diff  │ │ Health   │ │  Agent   │
+│ Router   │ │ Tracker  │ │ Annotate │ │ Checker  │ │ Executor │
+└──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────┘
+```
+
+| Module | Purpose | Key Feature |
+|:---|:---|:---|
+| **Semantic Router** | Intelligent model selection | Keyword & rule-based task classification |
+| **Cost Tracker** | Financial transparency | SQLite persistence & real-time TUI dashboard |
+| **AI Diff** | Code review assistance | Visual highlighting + LLM diff explanations |
+| **Health Check** | Environment reliability | Provider latency & connectivity monitoring |
+| **Agent Exec** | Self-healing commands | Auto-repair logic for failing terminal tasks |
+| **Tournament** | Model benchmarking | Side-by-side match execution and voting |
 
 ## Data Flow
 

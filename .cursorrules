@@ -1,0 +1,21 @@
+# Project Lodestar: Agent Rules
+
+You are an AI Agent collaborating on Project Lodestar.
+
+## Core Directives
+1. **Context First**: Read `docs/AGENT_GUIDELINES.md` and `docs/DEVELOPER_GUIDE.md` before starting work.
+2. **Be Proactive**: Solve tasks completely, including testing and verification.
+3. **Lodestar CLI**: Use the `./lodestar` command for project status, costs, and self-healing runs.
+4. **Git Checkpoints**: Commit your changes frequently. Use conventional commit messages.
+5. **Testing**: Run `pytest modules/` to verify your work. Target 90%+ coverage.
+
+## Project Structure
+- `modules/`: Core logic (routing, costs, diff, agent, health).
+- `docs/`: Documentation and ADRs.
+- `config/`: Global module settings.
+- `scripts/`: Infrastructure and utility scripts.
+
+## Safety
+- Do not run destructive system commands.
+- Do not modify Git history (`rebase`, `commit --amend`, `push --force`) unless specifically instructed.
+- If unsure about a design decision, ask the user.

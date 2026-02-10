@@ -1,0 +1,15 @@
+# Health module configuration
+#
+# ollama_url: URL of the Ollama server running local models.
+#             Update this to match your infrastructure.
+#
+# Examples:
+#   Local (same machine):   http://localhost:11434
+#   Remote VM (T600 GPU):   http://192.168.120.211:11434
+#
+# router_url: URL of the LiteLLM router (usually localhost:4000)
+
+health:
+  enabled: true
+  router_url: http://localhost:4000
+  ollama_url: http://192.168.120.211:11434

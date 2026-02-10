@@ -35,10 +35,9 @@ def cmd_costs(proxy: LodestarProxy, args: argparse.Namespace) -> None:
 def cmd_run(proxy: LodestarProxy, args: argparse.Namespace) -> None:
     """Run a command with self-healing capabilities."""
     from modules.agent import AgentExecutor
-    import shlex
 
-    # Join the command parts if it's a list
-    command = " ".join(args.command)
+    # Join the command parts into a single string
+    command = " ".join(args.cmd_args)
     print(f"Running command: {command}")
     
     executor = AgentExecutor(proxy)
@@ -196,7 +195,7 @@ def build_parser() -> argparse.ArgumentParser:
         "run", help="Run a command with self-healing"
     )
     run_parser.add_argument(
-        "command", nargs="+", help="The command to run"
+        "cmd_args", nargs="+", help="The command to run"
     )
 
     # cache

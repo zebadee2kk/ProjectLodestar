@@ -1,0 +1,19 @@
+# Health Monitoring Module Configuration
+#
+# Configures the HealthChecker which pings LiteLLM router and Ollama
+# to verify endpoint availability.
+
+health:
+  enabled: true
+
+  # LiteLLM proxy router URL (default: localhost:4000)
+  router_url: "http://localhost:4000"
+
+  # Health check path for the router (LiteLLM serves /v1/models, not /health)
+  router_health_path: "/v1/models"
+
+  # Ollama server URL — set this to your Ollama host
+  ollama_url: "http://192.168.120.211:11434"
+
+  # Health check timeout in seconds
+  timeout: 2

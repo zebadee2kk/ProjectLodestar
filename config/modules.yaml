@@ -16,3 +16,9 @@ modules:
 
   tournament:
     enabled: true
+
+  health:
+    enabled: true
+
+  agent:
+    enabled: true

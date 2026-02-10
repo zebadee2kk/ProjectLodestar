@@ -1,7 +1,8 @@
-![Version](https://img.shields.io/badge/version-2.1.0--alpha.1-orange)
+![Version](https://img.shields.io/badge/version-2.0.0--beta.2-orange)
 ![Status](https://img.shields.io/badge/status-active_development-blue)
 ![Branch](https://img.shields.io/badge/branch-develop-purple)
-![Tests](https://img.shields.io/badge/tests-41_passed-brightgreen)
+![Tests](https://img.shields.io/badge/tests-296_passed-brightgreen)
+![Coverage](https://img.shields.io/badge/coverage-90%25-brightgreen)
 
 # 🌟 Lodestar
 
@@ -11,7 +12,7 @@ Lodestar is a high-performance orchestration layer for LLM-based development. It
 
 ---
 
-**Current Release:** `v2.1.0-alpha.1`  
+**Current Release:** `v2.0.0-beta.2`
 **Primary Integration Branch:** `develop`
 
 ---
@@ -160,10 +161,14 @@ aider --model claude-sonnet file.py
 ./scripts/test-all-providers.sh
 
 # v2.0 Features
-lodestar status              # Check health
+lodestar status              # Check module health
 lodestar costs --dashboard   # Real-time cost TUI
+lodestar route "fix bug"     # Test routing decision
+lodestar tournament "prompt" model1 model2  # Compare models
 lodestar diff                # Visual AI diff
 lodestar run "python app.py" # Self-healing execution
+lodestar cache               # View cache stats
+lodestar cache --clear       # Clear response cache
 
 # Test Infrastructure
 ./scripts/test-lodestar.sh
@@ -245,7 +250,7 @@ Built with:
 
 ---
 
-**Status:** v1.0.0 - Production Ready ✅  
-**Last Updated:** February 2026
+**Status:** v2.0.0-beta.2 - Core features complete, 296 tests passing
+**Last Updated:** February 10, 2026
 
 ✨ SSH authentication configured

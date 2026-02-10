@@ -11,31 +11,43 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Model warm-up on router start
 - Connection pooling for T600
 - GPU model-switch optimization
-- Model tournament mode (side-by-side comparison)
-- LiteLLM callback hook for automatic cost recording
-- CSV/JSON export from cost storage
-- LLM-powered diff annotations (upgrade from heuristic)
+- GPU utilization monitoring (Claude workstream)
+- Provider availability tracking (Claude workstream)
+- Model recommendation engine
+- Integration tests with live LiteLLM router
+- Performance benchmarking suite
 
-## [2.0.0-alpha.3] - 2026-02-09
+## [2.0.0-beta.2] - 2026-02-10
 
 ### Added
 - **Tournament:** `TournamentRunner` — side-by-side model comparison with
-  match execution, voting, draw support, leaderboard with win rates, and
-  formatted terminal output
+  match execution, voting, draw support, leaderboard with win rates
+- **CLI:** `lodestar tournament "prompt" model1 model2` command
 - **Cost storage:** `query_by_model()`, `query_by_date_range()`, `cleanup()`
   retention purge, and `record_count()` on CostStorage
-- **Cost persistence:** CostTracker now auto-persists to SQLite when
+- **Cost persistence:** CostTracker auto-persists to SQLite when
   `database_path` is configured — dual-layer (in-memory + durable)
 - **Proxy:** `handle_request()` accepts `tokens_in`/`tokens_out` params
   for real token count forwarding from LiteLLM callbacks
-- **CLI:** `lodestar tournament "prompt" model1 model2` command
+- **Config:** Added `health` and `agent` modules to `config/modules.yaml`
 
 ### Fixed
+- Duplicate imports in `proxy.py` (SemanticRouter and FallbackExecutor)
+- Cache key collision: uses actual model name instead of `"routeless"`
+- Cache lookup moved after routing so model is available for key generation
 - CostStorage date range queries now use SQLite-compatible timestamp format
+- DiffAnnotator tests adapted for LLM-powered API
+- DiffPreview tests adapted for Rich-based `render()` method
+- Proxy test cache isolation (clear between tests)
+
+### Changed
+- Merged all Claude and Gemini contributions into unified codebase
+- Updated ROADMAP.md to reflect actual completion status
+- Updated README.md with accurate metrics and all CLI commands
 
 ### Metrics
-- 182 tests, 98% code coverage (+49 tests from alpha.2)
-- 6 new files, ~350 lines of new code
+- 296 tests, 90% code coverage
+- 21 files changed, +1,649 lines from Claude contributions
 
 ## [2.1.0-alpha.1] - 2026-02-09
 

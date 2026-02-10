@@ -118,5 +118,4 @@ USER REQUEST:
             "memory": self.memory.health_check(),
             "context": self.context.health_check(),
             "knowledge": self.knowledge.health_check(),
-            "proxy": self.proxy.health_check()
         }

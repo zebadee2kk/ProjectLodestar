@@ -48,21 +48,13 @@ aider --model grok-beta file.py           # Grok
 
 ---
 
-## Common Commands
-
-### Router Management
-```bash
-./scripts/start-router.sh    # Start LiteLLM router
-./scripts/stop-router.sh     # Stop router
-./scripts/status.sh          # Check status
-```
-
-### Testing
-```bash
-./scripts/test-providers-simple.sh    # Quick provider test
-./scripts/test-all-providers.sh       # Comprehensive test
-./scripts/test-lodestar.sh            # Infrastructure test
-```
+# v2.0 Health & Agent Commands
+lodestar status          # Detailed health dashboard
+lodestar config          # Configure remote GPU / SSH
+lodestar costs --dashboard # Real-time cost analytics
+lodestar run "ls -la"    # Self-healing execution
+lodestar run "find file" # Goal-oriented agentic cleanup
+lodestar diff            # Visual AI-enhanced diff
 
 ### Git & SSH
 ```bash

@@ -36,7 +36,7 @@
 
 **Health Monitoring**
 - [x] Router health endpoint (/health) (`lodestar status`)
-- [ ] T600 GPU utilization monitoring
+- [x] T600 GPU utilization monitoring (Remote via SSH)
 - [ ] Provider availability dashboard
 - [x] Automatic fallback on failure (`AgentExecutor` + `FallbackExecutor`)
 - **Value:** Production reliability
@@ -172,4 +172,4 @@ Have an idea for v2?
 
 ---
 
-**Current Status:** v1.0.0 shipped and operational! 🚀
+**Current Status:** v2.1.0-alpha.2 operational! 🚀

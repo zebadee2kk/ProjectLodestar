@@ -10,11 +10,23 @@ This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Planned
 - Model warm-up on router start
 - Connection pooling for T600
-- GPU model-switch optimization
-- Model tournament mode (side-by-side comparison)
-- LiteLLM callback hook for automatic cost recording
 - CSV/JSON export from cost storage
 - LLM-powered diff annotations (upgrade from heuristic)
+
+## [2.1.0-alpha.2] - 2026-02-10
+
+### Added
+- **Health:** Remote GPU monitoring support via SSH for distributed setups.
+- **Config:** `lodestar config` command for interactive setup of local settings and credentials.
+- **Config:** Git-ignored `.lodestar/config.yaml` vault for secure credential storage.
+- **Docs:** Updated architecture diagrams and quick reference with v2 features.
+
+### Fixed
+- **CLI:** Corrected Rich markup tags in stability command.
+- **CLI:** Fixed argument collision in `run` command using `argparse.REMAINDER`.
+- **Agent:** Robust heuristic extraction of shell commands from LLM responses (prevents conversational text execution).
+- **Agent:** Fixed `ModelResponse` object serialization and `strip()` bugs in executor.
+- **Health:** Graceful handling of SSH failures (BatchMode) and silenced connection warnings in dashboard.
 
 ## [2.0.0-alpha.3] - 2026-02-09
 

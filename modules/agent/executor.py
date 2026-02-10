@@ -93,7 +93,8 @@ class AgentExecutor:
             # But "code_explanation" might be too verbose. Let's try relying on prompt engineering.
             response = self.proxy.handle_request(
                 prompt=prompt,
-                task_override="code_generation" 
+                task_override="code_generation",
+                live=True
             )
             
             if response["result"].success and response["result"].response:

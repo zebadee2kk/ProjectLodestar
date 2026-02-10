@@ -43,7 +43,8 @@ class DiffAnnotator:
             # it routes correctly (likely to a cheaper model like Llama/GPT-4o-mini)
             response = self.proxy.handle_request(
                 prompt=prompt,
-                task_override="code_explanation"
+                task_override="code_explanation",
+                live=True
             )
 
             if response["result"].success and response["result"].response:

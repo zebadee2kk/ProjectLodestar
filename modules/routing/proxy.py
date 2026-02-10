@@ -106,6 +106,7 @@ class LodestarProxy:
         model_override: Optional[str] = None,
         tokens_in: int = 0,
         tokens_out: int = 0,
+        live: bool = False,
     ) -> Dict[str, Any]:
         """Process an LLM request through the full pipeline.
 
@@ -123,6 +124,7 @@ class LodestarProxy:
             model_override: Force a specific model (bypasses routing).
             tokens_in: Input token count (from LiteLLM callback).
             tokens_out: Output token count (from LiteLLM callback).
+            live: If True and request_fn is None, uses internal live requester.
 
         Returns:
             Dict with task, model, result, cost_entry keys.
@@ -141,10 +143,14 @@ class LodestarProxy:
                 return cached_response
 
         # Step 3: Execute (or dry-run)
-        if request_fn is not None:
+        executor_fn = request_fn
+        if executor_fn is None and live:
+            executor_fn = self._get_live_request_fn(prompt)
+
+        if executor_fn is not None:
             fallback_chain = self.router.get_fallback_chain(model)
             result = self.fallback_executor.execute(
-                model, fallback_chain, request_fn
+                model, fallback_chain, executor_fn
             )
             actual_model = result.model if result.success else model
         else:
@@ -152,10 +158,17 @@ class LodestarProxy:
             actual_model = model
 
         # Step 4: Record cost
+        # If we had a real execution, we might get tokens from the result
+        t_in = tokens_in
+        t_out = tokens_out
+        if result.success and result.response and hasattr(result.response, "usage"):
+            t_in = result.response.usage.prompt_tokens
+            t_out = result.response.usage.completion_tokens
+
         cost_entry = self.cost_tracker.record(
             model=actual_model,
-            tokens_in=tokens_in,
-            tokens_out=tokens_out,
+            tokens_in=t_in,
+            tokens_out=t_out,
             task=task,
         )
 
@@ -192,6 +205,20 @@ class LodestarProxy:
             )
             
         return result_dict
+
+    def _get_live_request_fn(self, prompt: str) -> Any:
+        """Create a request function that calls the local LiteLLM router."""
+        import litellm
+
+        def live_request(model_name: str) -> Any:
+            return litellm.completion(
+                model=model_name,
+                messages=[{"role": "user", "content": prompt}],
+                api_base="http://localhost:4000",
+                api_key="sk-dummy"
+            )
+
+        return live_request
 
     def health_check(self) -> Dict[str, Any]:
         """Return health status of all modules."""

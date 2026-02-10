@@ -78,10 +78,13 @@ class TestMainCLI:
         assert "m2" in captured.out
         assert "m3" in captured.out
 
-    def test_no_command_shows_help(self, capsys):
-        with pytest.raises(SystemExit) as exc_info:
-            main([])
-        assert exc_info.value.code == 0
+    def test_no_command_launches_cockpit(self):
+        """No sub-command now launches the interactive cockpit (not sys.exit)."""
+        from modules.cli import build_parser
+        parser = build_parser()
+        args = parser.parse_args([])
+        # The new behaviour: no command → cockpit; args.command should be None
+        assert args.command is None
 
 
 class TestCLIEdgeCases:

@@ -13,6 +13,8 @@ Usage:
     python -m modules.cli orchestrate "Build a REST API"  # Run agent workflow
     python -m modules.cli orchestrate --list              # List playbooks
     python -m modules.cli orchestrate --history           # Show run history
+    python -m modules.cli cockpit                         # Interactive TUI hub
+    python -m modules.cli                                 # Launches cockpit (default)
 """
 
 import argparse
@@ -328,7 +330,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Extra template variables (can repeat: --var foo=bar --var baz=qux)"
     )
 
+    # cockpit
+    subparsers.add_parser("cockpit", help="Launch the interactive Lodestar Cockpit TUI")
+
     return parser
+
+
+def cmd_cockpit(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Launch the full-screen interactive cockpit dashboard."""
+    from modules.cockpit.dashboard import LodestarCockpit
+    cockpit = LodestarCockpit(proxy)
+    cockpit.run()
 
 
 def main(argv: Optional[List[str]] = None) -> None:
@@ -337,8 +349,14 @@ def main(argv: Optional[List[str]] = None) -> None:
     args = parser.parse_args(argv)
 
     if not args.command:
-        parser.print_help()
-        sys.exit(0)
+        # No sub-command → launch the cockpit as the default experience
+        proxy = LodestarProxy()
+        proxy.start()
+        try:
+            cmd_cockpit(proxy, args)
+        finally:
+            proxy.stop()
+        return
 
     proxy = LodestarProxy()
     proxy.start()
@@ -352,6 +370,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         "run": cmd_run,
         "cache": cmd_cache,
         "orchestrate": cmd_orchestrate,
+        "cockpit": cmd_cockpit,
     }
 
     try:

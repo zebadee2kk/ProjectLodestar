@@ -1,13 +1,18 @@
-![Status](https://img.shields.io/badge/status-operational-brightgreen)
-![Models](https://img.shields.io/badge/models-8%20providers-blue)
-![Cost](https://img.shields.io/badge/cost-90%25%20savings-success)
-![License](https://img.shields.io/badge/license-MIT-blue)
+![Version](https://img.shields.io/badge/version-2.1.0--alpha.1-orange)
+![Status](https://img.shields.io/badge/status-active_development-blue)
+![Branch](https://img.shields.io/badge/branch-develop-purple)
+![Tests](https://img.shields.io/badge/tests-41_passed-brightgreen)
 
 # 🌟 Lodestar
 
-**AI-powered development environment with intelligent cost optimization**
+**The ultimate AI-powered developer cockpit for cost-optimized building.**
 
-Lodestar is a production-ready AI coding stack that routes between 8 LLM providers, defaulting to FREE local models while seamlessly escalating to premium APIs only when needed. Achieve 90%+ cost savings compared to using Claude/ChatGPT exclusively.
+Lodestar is a high-performance orchestration layer for LLM-based development. It intelligently routes between local FREE models (via Ollama) and premium APIs (Claude, OpenAI, Gemini) to maximize speed and minimize costs (target: 90%+ savings). 
+
+---
+
+**Current Release:** `v2.1.0-alpha.1`  
+**Primary Integration Branch:** `develop`
 
 ---
 
@@ -126,6 +131,10 @@ aider --model claude-sonnet file.py
 
 ## 📚 Documentation
 
+- **[Branching Strategy](docs/BRANCHING_STRATEGY.md)** - Git Flow and collaboration (NEW)
+- **[Task Allocation](docs/TASK_ALLOCATION.md)** - Workstreams and assignments (NEW)
+- **[Developer Guide](docs/DEVELOPER_GUIDE.md)** - File map and onboarding (NEW)
+- **[Versioning](docs/VERSIONING.md)** - Release strategy (NEW)
 - **[Architecture](docs/ARCHITECTURE.md)** - System design and components
 - **[Setup Guide](docs/SETUP.md)** - Detailed installation instructions
 - **[Workflow](docs/WORKFLOW.md)** - Day-to-day usage patterns
@@ -133,7 +142,7 @@ aider --model claude-sonnet file.py
 - **[Security](docs/SECURITY.md)** - API key management best practices
 - **[Contributing](docs/CONTRIBUTING.md)** - Contribution guidelines
 - **[ADRs](docs/adr/)** - Architecture decision records
-- **[Roadmap](ROADMAP.md)** - Future enhancements (v2.0+)
+- **[Roadmap](ROADMAP.md)** - Future enhancements (v2.1+)
 
 ---
 
@@ -149,6 +158,12 @@ aider --model claude-sonnet file.py
 # Test All Providers
 ./scripts/test-providers-simple.sh
 ./scripts/test-all-providers.sh
+
+# v2.0 Features
+lodestar status              # Check health
+lodestar costs --dashboard   # Real-time cost TUI
+lodestar diff                # Visual AI diff
+lodestar run "python app.py" # Self-healing execution
 
 # Test Infrastructure
 ./scripts/test-lodestar.sh

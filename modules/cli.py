@@ -107,7 +107,7 @@ def cmd_status(proxy: LodestarProxy, args: argparse.Namespace) -> None:
         
         status = data.get("status", "unknown") if isinstance(data, dict) else str(data)
         color = "green" if status == "healthy" else "red"
-        module_table.add_row(f"[bold]{name}[/bold]", f"[{color}]{status}[/color]")
+        module_table.add_row(f"[bold]{name}[/bold]", f"[{color}]{status}[/]")
     
     # Components / Endpoints
     comp_table = Table(title="Endpoints", box=None, show_header=False)
@@ -120,7 +120,7 @@ def cmd_status(proxy: LodestarProxy, args: argparse.Namespace) -> None:
         st = details.get("status", "unknown")
         color = "green" if st == "healthy" else "red"
         lat = details.get('latency_ms', '?')
-        comp_table.add_row(f"  • {comp}", f"[{color}]{st}[/color]", f"({lat}ms)")
+        comp_table.add_row(f"  • {comp}", f"[{color}]{st}[/]", f"({lat}ms)")
 
     # GPU Hardware Section
     gpu = components.get("gpu", {})

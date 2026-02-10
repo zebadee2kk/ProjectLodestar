@@ -36,8 +36,9 @@ class HealthChecker(LodestarPlugin):
             "components": {}
         }
 
-        # Check Router (LiteLLM)
-        router_status = self._check_url(f"{self.router_url}/health", "router")
+        # Check Router (LiteLLM) — uses /v1/models (OpenAI-compatible endpoint)
+        router_health_path = self.config.get("router_health_path", "/v1/models")
+        router_status = self._check_url(f"{self.router_url}{router_health_path}", "router")
         status["components"]["router"] = router_status
 
         # Check Ollama

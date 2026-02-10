@@ -17,7 +17,9 @@ class GPUMonitor:
 
     def _get_ssh_prefix(self) -> List[str]:
         """Generate the SSH command prefix with proper options."""
-        target = f"{self.user}@{self.host}" if self.user else self.host
+        if not self.host:
+            return []
+        target = f"{self.user}@{self.host}" if self.user else str(self.host)
         prefix: List[str] = [
             "ssh",
             "-o", "ConnectTimeout=3",
@@ -39,7 +41,7 @@ class GPUMonitor:
             return True
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
             if self.host:
-                logger.warning(f"Could not connect to GPU host {self.host} (user: {self.user}) via SSH")
+                logger.debug(f"Could not connect to GPU host {self.host} (user: {self.user}) via SSH")
             else:
                 logger.debug("nvidia-smi not found locally")
             return False

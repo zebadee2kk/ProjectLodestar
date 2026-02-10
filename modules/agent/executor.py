@@ -83,14 +83,18 @@ class AgentExecutor:
     def _get_fix_from_llm(self, command: str, error: str) -> Optional[str]:
         """Ask LodestarProxy for a fix for the failed command."""
         prompt = (
-            f"The following command failed:\n`{command}`\n\n"
-            f"Error Output:\n{error}\n\n"
-            f"Suggest a fixed command to run. Respond ONLY with the command string, no markdown."
+            "You are a shell command optimization expert. A command just failed.\n\n"
+            f"Original Goal/Command: {command}\n"
+            f"Error Output: {error}\n\n"
+            "Your Task: Provide ONLY the corrected shell command to achieve the goal.\n"
+            "Rules:\n"
+            "- NO explanations.\n"
+            "- NO markdown code blocks.\n"
+            "- NO conversational text.\n"
+            "- Output ONLY the command string."
         )
         
         try:
-            # We use task_override="code_generation" or similar to get raw code/command
-            # But "code_explanation" might be too verbose. Let's try relying on prompt engineering.
             response = self.proxy.handle_request(
                 prompt=prompt,
                 task_override="code_generation",
@@ -100,15 +104,33 @@ class AgentExecutor:
             if response["result"].success and response["result"].response:
                 # Handle LiteLLM ModelResponse or raw string
                 res = response["result"].response
+                content = ""
                 if hasattr(res, "choices"):
-                    fix = res.choices[0].message.content.strip()
+                    content = res.choices[0].message.content
                 elif isinstance(res, str):
-                    fix = res.strip()
+                    content = res
                 else:
-                    fix = str(res).strip()
+                    content = str(res)
                 
-                # Naive cleanup of code blocks if present
-                fix = fix.replace("```bash", "").replace("```", "").strip()
+                # Cleanup: Take the last non-empty line that isn't conversational
+                lines = [l.strip() for l in content.strip().split("\n") if l.strip()]
+                
+                # Filter out markdown backticks
+                lines = [l.replace("```bash", "").replace("```", "").strip() for l in lines]
+                lines = [l for l in lines if l]
+
+                if not lines:
+                    return None
+
+                # Optimization: Find a line that looks like a command
+                fix = lines[-1] # Fallback
+                for line in lines:
+                    # Heuristic: commands don't usually start with sentence-starters like "The"
+                    if any(cmd in line for cmd in ["du ", "find ", "ls ", "grep ", "|", "cat ", "echo "]):
+                        if not any(line.lower().startswith(p) for p in ["the ", "it ", "here ", "this ", "you "]):
+                            fix = line
+                            break
+                
                 return fix
             return None
         except Exception as e:

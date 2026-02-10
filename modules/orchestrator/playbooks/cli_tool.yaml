@@ -1,0 +1,147 @@
+name: cli_tool
+description: Build a CLI tool with argument parsing, commands, tests, and packaging
+
+steps:
+  - name: design_cli
+    tool_type: llm
+    capability: architecture
+    preferred_model: claude-sonnet
+    prompt: |
+      You are designing a command-line tool based on these requirements:
+
+        {user_requirements}
+
+      Produce a design document that includes:
+      1. Tool name and purpose
+      2. List of subcommands with arguments and descriptions
+      3. Configuration file format (if needed)
+      4. Output format (plain text, JSON, table, etc.)
+
+      Be concise and practical.
+    output: cli_design
+    max_tokens: 1500
+
+  - name: implement_cli
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_cli]
+    prompt: |
+      Implement the CLI tool described in this design using Python's
+      argparse (no external CLI libraries).
+      Use type hints, dataclasses for config, and clean separation between
+      argument parsing and business logic.
+
+      Design:
+      {cli_design}
+
+      Return only Python code (cli.py), no markdown fences.
+    output: cli_py
+    max_tokens: 4096
+
+  - name: generate_tests
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [implement_cli]
+    prompt: |
+      Write pytest tests for this CLI tool.
+      Test each subcommand, argument validation, and error paths.
+      Use unittest.mock to avoid side effects.
+
+      CLI code:
+      {cli_py}
+
+      Return only Python code (test_cli.py), no markdown fences.
+    output: tests_py
+    max_tokens: 3000
+
+  - name: generate_docs
+    tool_type: llm
+    capability: documentation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [implement_cli]
+    prompt: |
+      Write a README.md for this CLI tool.
+      Include: installation, usage examples for each command,
+      configuration options, and contributing guidelines.
+
+      CLI code:
+      {cli_py}
+
+      Return only markdown.
+    output: readme_md
+    max_tokens: 1500
+
+  - name: generate_setup
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_cli, implement_cli]
+    prompt: |
+      Create a pyproject.toml for this CLI tool with:
+      - Project metadata
+      - Dependencies
+      - [project.scripts] entry point
+      - pytest configuration
+
+      Based on this CLI implementation:
+      {cli_py}
+
+      Return only valid TOML, no markdown fences.
+    output: pyproject_toml
+    max_tokens: 800
+
+  - name: write_cli_file
+    tool_type: file
+    capability: file_write
+    depends_on: [implement_cli]
+    operation: write
+    path: output/cli.py
+    content_from: cli_py
+    output: cli_file_path
+
+  - name: write_tests_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_tests]
+    operation: write
+    path: output/test_cli.py
+    content_from: tests_py
+    output: tests_file_path
+
+  - name: write_readme_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_docs]
+    operation: write
+    path: output/README.md
+    content_from: readme_md
+    output: readme_file_path
+
+  - name: write_pyproject_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_setup]
+    operation: write
+    path: output/pyproject.toml
+    content_from: pyproject_toml
+    output: pyproject_file_path
+
+synthesis:
+  tool_type: llm
+  capability: synthesis
+  preferred_model: claude-sonnet
+  prompt: |
+    Review the CLI tool implementation for quality and completeness:
+
+    ## Design
+    {cli_design}
+
+    ## Implementation
+    {cli_py}
+
+    Check: Are all designed commands implemented? Is error handling present?
+    Are tests comprehensive?
+    Conclude with "CLI tool is complete." or list issues.
+  max_tokens: 1024

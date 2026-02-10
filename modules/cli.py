@@ -1,8 +1,8 @@
 """Lodestar v2 command-line interface.
 
 Provides commands for cost reporting, route testing, tournament
-matches, and module health checking. Uses argparse (stdlib) to
-avoid adding Click as a dependency.
+matches, module health checking, and multi-step agent orchestration.
+Uses argparse (stdlib) to avoid adding Click as a dependency.
 
 Usage:
     python -m modules.cli costs              # Show cost summary
@@ -10,6 +10,9 @@ Usage:
     python -m modules.cli tournament "prompt" model1 model2  # Run tournament
     python -m modules.cli status             # Module health check
     python -m modules.cli diff               # AI-enhanced visual diff
+    python -m modules.cli orchestrate "Build a REST API"  # Run agent workflow
+    python -m modules.cli orchestrate --list              # List playbooks
+    python -m modules.cli orchestrate --history           # Show run history
 """
 
 import argparse
@@ -122,6 +125,89 @@ def cmd_tournament(proxy: LodestarProxy, args: argparse.Namespace) -> None:
     runner.stop()
 
 
+def cmd_orchestrate(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Run a multi-step agent workflow (or list playbooks / show history)."""
+    from modules.orchestrator import OrchestratorEngine
+    import yaml
+    from pathlib import Path
+
+    # Load orchestrator config
+    orch_config_path = Path("modules/orchestrator/config.yaml")
+    if orch_config_path.exists():
+        with open(orch_config_path) as fh:
+            raw = yaml.safe_load(fh) or {}
+        orch_config = raw.get("orchestrator", {"enabled": True})
+    else:
+        orch_config = {"enabled": True}
+
+    engine = OrchestratorEngine(orch_config, proxy=proxy, event_bus=proxy.event_bus)
+    engine.start()
+
+    if args.list:
+        playbooks = engine.list_playbooks()
+        print("Available playbooks:")
+        for name in playbooks:
+            print(f"  {name}")
+        return
+
+    if args.history:
+        runs = engine.history(limit=args.history_limit)
+        if not runs:
+            print("No orchestration runs recorded yet.")
+            return
+        print(f"{'Run ID':<10}  {'Status':<10}  {'Cost':>7}  {'Steps':>5}  Request")
+        print("-" * 70)
+        for r in runs:
+            cost_str = f"${r['cost']:.4f}"
+            print(f"{r['run_id']:<10}  {r['status']:<10}  {cost_str:>7}  {r['steps']:>5}  {r['request']}")
+        return
+
+    # Run orchestration
+    request = " ".join(args.request) if args.request else ""
+    if not request:
+        print("Error: provide a request to orchestrate. Use --list to see playbooks.")
+        sys.exit(1)
+
+    print(f"Orchestrating: {request}")
+    if args.playbook:
+        print(f"Using playbook: {args.playbook}")
+
+    steps_seen: list = []
+
+    def progress(step_name: str, index: int, total: int) -> None:
+        steps_seen.append(step_name)
+        print(f"  [{index}/{total}] {step_name}...", flush=True)
+
+    variables = {}
+    if args.var:
+        for v in args.var:
+            if "=" in v:
+                k, val = v.split("=", 1)
+                variables[k.strip()] = val.strip()
+
+    result = engine.run(
+        request=request,
+        playbook_name=args.playbook or None,
+        variables=variables or None,
+        progress_callback=progress,
+    )
+
+    print()
+    print("=" * 60)
+    print("ORCHESTRATION COMPLETE" if result.success else "ORCHESTRATION FAILED")
+    print("=" * 60)
+    if result.synthesis_output:
+        print(result.synthesis_output)
+        print()
+    print(f"Steps completed : {result.step_count - len(result.failed_steps)}/{result.step_count}")
+    if result.failed_steps:
+        print(f"Failed steps    : {', '.join(result.failed_steps)}")
+    print(f"Total cost      : ${result.total_cost:.4f}")
+    artifact_names = [k for k in result.artifacts if not k.startswith("_")]
+    if artifact_names:
+        print(f"Artifacts       : {', '.join(sorted(artifact_names))}")
+
+
 def cmd_diff(proxy: LodestarProxy, args: argparse.Namespace) -> None:
     """Show AI-enhanced visual diff."""
     from modules.diff import DiffPreview
@@ -218,6 +304,30 @@ def build_parser() -> argparse.ArgumentParser:
         "--no-ai", action="store_true", help="Disable AI annotations"
     )
 
+    # orchestrate
+    orch_parser = subparsers.add_parser(
+        "orchestrate", help="Run a multi-step agent workflow"
+    )
+    orch_parser.add_argument(
+        "request", nargs="*", help="Natural language description of what to build"
+    )
+    orch_parser.add_argument(
+        "--playbook", "-p", help="Force a specific playbook by name"
+    )
+    orch_parser.add_argument(
+        "--list", "-l", action="store_true", help="List available playbooks"
+    )
+    orch_parser.add_argument(
+        "--history", action="store_true", help="Show recent orchestration run history"
+    )
+    orch_parser.add_argument(
+        "--history-limit", type=int, default=10, help="Number of history entries to show"
+    )
+    orch_parser.add_argument(
+        "--var", action="append", metavar="KEY=VALUE",
+        help="Extra template variables (can repeat: --var foo=bar --var baz=qux)"
+    )
+
     return parser
 
 
@@ -241,6 +351,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         "diff": cmd_diff,
         "run": cmd_run,
         "cache": cmd_cache,
+        "orchestrate": cmd_orchestrate,
     }
 
     try:

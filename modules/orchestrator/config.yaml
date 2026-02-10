@@ -1,0 +1,29 @@
+orchestrator:
+  enabled: true
+
+  # Directory containing workflow playbook YAML files.
+  # Defaults to modules/orchestrator/playbooks/ if not set.
+  playbooks_dir: ""
+
+  # SQLite database for run history.
+  # Defaults to ~/.lodestar/orchestrator_runs.db if not set.
+  db_path: ""
+
+  # Base directory used by the FileTool for relative write paths.
+  output_dir: "."
+
+  # Tool preferences per capability (optional overrides).
+  # Useful if you want to force a specific model for certain step types.
+  tool_preferences:
+    planning:
+      preferred_model: claude-sonnet
+    architecture:
+      preferred_model: claude-sonnet
+    synthesis:
+      preferred_model: claude-sonnet
+    code_generation:
+      preferred_model: gpt-3.5-turbo   # Free / Ollama
+    documentation:
+      preferred_model: gpt-3.5-turbo
+    bug_fix:
+      preferred_model: gpt-3.5-turbo

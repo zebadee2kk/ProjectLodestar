@@ -1,0 +1,190 @@
+name: rest_api
+description: Build a REST API with database backend — schema, models, routes, tests, docs, docker
+
+steps:
+  - name: design_schema
+    tool_type: llm
+    capability: architecture
+    preferred_model: claude-sonnet
+    prompt: |
+      You are a senior database architect.
+      Design a PostgreSQL schema for the following requirements:
+
+        {user_requirements}
+
+      Return ONLY valid SQL CREATE TABLE statements with appropriate
+      indexes, foreign keys, and constraints.
+      Do not include any explanation — just the SQL.
+    output: schema_sql
+    max_tokens: 2048
+
+  - name: generate_models
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_schema]
+    prompt: |
+      Create SQLAlchemy 2.0 ORM models for the following PostgreSQL schema.
+      Use mapped_column() and Mapped[] type annotations.
+      Include __repr__ methods.
+
+      Schema:
+      {schema_sql}
+
+      Return only Python code, no markdown fences.
+    output: models_py
+    max_tokens: 3000
+
+  - name: design_api_routes
+    tool_type: llm
+    capability: code_generation
+    preferred_model: claude-sonnet
+    depends_on: [generate_models]
+    prompt: |
+      Create a FastAPI application implementing full CRUD REST endpoints
+      for these SQLAlchemy models.
+
+      Requirements:
+      - Pydantic v2 schemas for request/response validation
+      - Proper HTTP status codes (201 for create, 404 for not found, etc.)
+      - Dependency injection for database sessions
+      - Input validation and error handling
+      - OpenAPI docstrings on each endpoint
+
+      Models:
+      {models_py}
+
+      Return only Python code (main.py), no markdown fences.
+    output: routes_py
+    max_tokens: 4096
+
+  - name: generate_tests
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_api_routes]
+    prompt: |
+      Write comprehensive pytest tests for this FastAPI application.
+      Use TestClient and pytest fixtures.
+      Cover: create, read, update, delete, validation errors, not-found cases.
+
+      Application code:
+      {routes_py}
+
+      Return only Python code (test_api.py), no markdown fences.
+    output: tests_py
+    max_tokens: 3000
+
+  - name: generate_docs
+    tool_type: llm
+    capability: documentation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_api_routes, design_schema]
+    prompt: |
+      Write a clear README.md for this REST API project.
+      Include: Overview, Prerequisites, Setup, Running, API endpoints table,
+      Environment variables, and Contributing section.
+
+      Schema:
+      {schema_sql}
+
+      Routes:
+      {routes_py}
+
+      Return only markdown, no extra commentary.
+    output: readme_md
+    max_tokens: 2000
+
+  - name: generate_docker
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_api_routes, design_schema]
+    prompt: |
+      Create a production-ready docker-compose.yml for:
+      - FastAPI application (uvicorn, port 8000)
+      - PostgreSQL 15 database
+      - Environment variable configuration
+      - Health checks
+      - Volume for database persistence
+
+      Return only valid YAML, no markdown fences.
+    output: docker_compose_yml
+    max_tokens: 1500
+
+  - name: write_schema_file
+    tool_type: file
+    capability: file_write
+    depends_on: [design_schema]
+    operation: write
+    path: output/schema.sql
+    content_from: schema_sql
+    output: schema_file_path
+
+  - name: write_models_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_models]
+    operation: write
+    path: output/models.py
+    content_from: models_py
+    output: models_file_path
+
+  - name: write_routes_file
+    tool_type: file
+    capability: file_write
+    depends_on: [design_api_routes]
+    operation: write
+    path: output/main.py
+    content_from: routes_py
+    output: routes_file_path
+
+  - name: write_tests_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_tests]
+    operation: write
+    path: output/test_api.py
+    content_from: tests_py
+    output: tests_file_path
+
+  - name: write_readme_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_docs]
+    operation: write
+    path: output/README.md
+    content_from: readme_md
+    output: readme_file_path
+
+  - name: write_docker_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_docker]
+    operation: write
+    path: output/docker-compose.yml
+    content_from: docker_compose_yml
+    output: docker_file_path
+
+synthesis:
+  tool_type: llm
+  capability: synthesis
+  preferred_model: claude-sonnet
+  prompt: |
+    You are a senior software architect performing a final coherence review.
+
+    Review these generated project files for correctness and consistency:
+
+    ## Schema
+    {schema_sql}
+
+    ## Models
+    {models_py}
+
+    ## API Routes
+    {routes_py}
+
+    Identify any inconsistencies between the schema, models, and routes.
+    Suggest fixes where needed.
+    Conclude with: "Project is ready for development." or list blocking issues.
+  max_tokens: 2048

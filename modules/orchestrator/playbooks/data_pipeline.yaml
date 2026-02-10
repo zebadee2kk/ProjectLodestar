@@ -1,0 +1,216 @@
+name: data_pipeline
+description: Build a data pipeline with ingestion, transformation, validation, and output stages
+
+steps:
+  - name: design_pipeline
+    tool_type: llm
+    capability: architecture
+    preferred_model: claude-sonnet
+    prompt: |
+      Design a data pipeline for the following requirements:
+
+        {user_requirements}
+
+      Produce a design document covering:
+      1. Data sources (format, schema, update frequency)
+      2. Ingestion strategy (batch vs streaming, error handling)
+      3. Transformation steps (cleaning, enrichment, aggregation)
+      4. Validation rules (schema checks, business rules)
+      5. Output destinations and format
+      6. Technology choices (pandas, polars, SQLAlchemy, etc.)
+
+      Be specific and practical.
+    output: pipeline_design
+    max_tokens: 2000
+
+  - name: implement_ingestion
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_pipeline]
+    prompt: |
+      Implement the data ingestion layer described in this design.
+      Use Python with pandas or polars as appropriate.
+      Include error handling, logging, and type hints.
+
+      Design:
+      {pipeline_design}
+
+      Return only Python code (ingest.py), no markdown fences.
+    output: ingest_py
+    max_tokens: 3000
+
+  - name: implement_transform
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_pipeline, implement_ingestion]
+    prompt: |
+      Implement the data transformation layer.
+      Input comes from the ingestion layer below.
+      Use pure functions with clear docstrings.
+      Include type hints throughout.
+
+      Design:
+      {pipeline_design}
+
+      Ingestion code for context:
+      {ingest_py}
+
+      Return only Python code (transform.py), no markdown fences.
+    output: transform_py
+    max_tokens: 3000
+
+  - name: implement_validation
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_pipeline, implement_transform]
+    prompt: |
+      Implement data validation using pandera or pydantic.
+      Define schemas for both input and output data.
+      Raise descriptive errors on validation failures.
+
+      Design:
+      {pipeline_design}
+
+      Transform code:
+      {transform_py}
+
+      Return only Python code (validate.py), no markdown fences.
+    output: validate_py
+    max_tokens: 2500
+
+  - name: implement_pipeline
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [implement_ingestion, implement_transform, implement_validation]
+    prompt: |
+      Create the main pipeline orchestration script that connects:
+      ingest → validate(input) → transform → validate(output) → write
+
+      Use click or argparse for CLI invocation.
+      Support --dry-run mode.
+      Log each stage with timing information.
+
+      Components:
+      {ingest_py}
+
+      {transform_py}
+
+      {validate_py}
+
+      Return only Python code (pipeline.py), no markdown fences.
+    output: pipeline_py
+    max_tokens: 3000
+
+  - name: generate_tests
+    tool_type: llm
+    capability: code_generation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [implement_pipeline]
+    prompt: |
+      Write pytest tests for this data pipeline.
+      Use pytest fixtures with sample DataFrames.
+      Test: valid data passes, invalid data raises, transformations correct.
+
+      Pipeline:
+      {pipeline_py}
+
+      Return only Python code (test_pipeline.py), no markdown fences.
+    output: tests_py
+    max_tokens: 3000
+
+  - name: generate_docs
+    tool_type: llm
+    capability: documentation
+    preferred_model: gpt-3.5-turbo
+    depends_on: [design_pipeline, implement_pipeline]
+    prompt: |
+      Write a README.md for this data pipeline project.
+      Include: architecture diagram (ASCII), setup, usage, configuration,
+      data schema documentation, and troubleshooting.
+
+      Design: {pipeline_design}
+
+      Return only markdown.
+    output: readme_md
+    max_tokens: 2000
+
+  - name: write_ingest_file
+    tool_type: file
+    capability: file_write
+    depends_on: [implement_ingestion]
+    operation: write
+    path: output/ingest.py
+    content_from: ingest_py
+    output: ingest_file_path
+
+  - name: write_transform_file
+    tool_type: file
+    capability: file_write
+    depends_on: [implement_transform]
+    operation: write
+    path: output/transform.py
+    content_from: transform_py
+    output: transform_file_path
+
+  - name: write_validate_file
+    tool_type: file
+    capability: file_write
+    depends_on: [implement_validation]
+    operation: write
+    path: output/validate.py
+    content_from: validate_py
+    output: validate_file_path
+
+  - name: write_pipeline_file
+    tool_type: file
+    capability: file_write
+    depends_on: [implement_pipeline]
+    operation: write
+    path: output/pipeline.py
+    content_from: pipeline_py
+    output: pipeline_file_path
+
+  - name: write_tests_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_tests]
+    operation: write
+    path: output/test_pipeline.py
+    content_from: tests_py
+    output: tests_file_path
+
+  - name: write_readme_file
+    tool_type: file
+    capability: file_write
+    depends_on: [generate_docs]
+    operation: write
+    path: output/README.md
+    content_from: readme_md
+    output: readme_file_path
+
+synthesis:
+  tool_type: llm
+  capability: synthesis
+  preferred_model: claude-sonnet
+  prompt: |
+    Review this data pipeline implementation for correctness:
+
+    ## Design
+    {pipeline_design}
+
+    ## Ingestion
+    {ingest_py}
+
+    ## Transformation
+    {transform_py}
+
+    ## Validation
+    {validate_py}
+
+    Check: Is data flow correct? Are edge cases handled? Are types consistent?
+    Conclude with "Pipeline is production-ready." or list blocking issues.
+  max_tokens: 2048

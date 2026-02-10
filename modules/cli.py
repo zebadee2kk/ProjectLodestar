@@ -32,6 +32,49 @@ def cmd_costs(proxy: LodestarProxy, args: argparse.Namespace) -> None:
         print(format_summary(summary))
 
 
+def cmd_config(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Configure local settings (credentials, hosts)."""
+    import yaml
+    from pathlib import Path
+    from rich.console import Console
+
+    console = Console()
+    config_dir = Path(".lodestar")
+    config_dir.mkdir(exist_ok=True)
+    config_file = config_dir / "config.yaml"
+
+    current_config = {}
+    if config_file.exists():
+        try:
+            with open(config_file) as f:
+                current_config = yaml.safe_load(f) or {}
+        except Exception:
+            current_config = {}
+
+    console.print("\n[bold cyan]🔧 Lodestar Local Configuration[/bold cyan]")
+    console.print("Settings stored in .lodestar/config.yaml (git-ignored)\n")
+
+    if "health" not in current_config:
+        current_config["health"] = {}
+    h_cfg = current_config["health"]
+    
+    # GPU Settings
+    console.print("[bold]Remote GPU (SSH)[/bold]")
+    gpu_host = input(f"  Host/IP [{h_cfg.get('gpu_ssh_host', 'None')}]: ").strip()
+    gpu_user = input(f"  SSH User [{h_cfg.get('gpu_ssh_user', 'None')}]: ").strip()
+
+    if gpu_host:
+        h_cfg["gpu_ssh_host"] = gpu_host
+    if gpu_user:
+        h_cfg["gpu_ssh_user"] = gpu_user
+
+    with open(config_file, "w") as f:
+        yaml.dump(current_config, f, default_flow_style=False)
+
+    console.print(f"\n[green]✅ Configuration saved successfully![/green]")
+    console.print("[dim]Run './lodestar status' to verify connectivity.[/dim]\n")
+
+
 def cmd_run(proxy: LodestarProxy, args: argparse.Namespace) -> None:
     """Run a command with self-healing capabilities."""
     from modules.agent import AgentExecutor
@@ -136,9 +179,14 @@ def cmd_status(proxy: LodestarProxy, args: argparse.Namespace) -> None:
             expand=False
         )
     elif gpu.get("status") == "not_available":
-         gpu_panel = Panel("[dim]GPU Hardware: Not Detected[/dim]", border_style="dim", expand=False)
+         gpu_panel = Panel("[dim]GPU Hardware: Not Detected[/dim]\n[dim]Run 'lodestar config' to set up remote GPU.[/dim]", border_style="dim", expand=False)
     else:
-         gpu_panel = Panel(f"[bold red]![/bold red] GPU Error: {gpu.get('error', 'Unknown')}", border_style="red", expand=False)
+         gpu_panel = Panel(
+             f"[bold red]![/bold red] GPU Error: {gpu.get('error', 'Unknown')}\n"
+             f"[dim]Tip: Check SSH access or run 'lodestar config'[/dim]", 
+             border_style="red", 
+             expand=False
+         )
 
     # Layout Rendering
     console.print(Columns([module_table, comp_table]))
@@ -258,6 +306,9 @@ def build_parser() -> argparse.ArgumentParser:
     diff_parser.add_argument(
         "--no-ai", action="store_true", help="Disable AI annotations"
     )
+
+    # config
+    subparsers.add_parser("config", help="Configure local settings and credentials")
 
     return parser
 

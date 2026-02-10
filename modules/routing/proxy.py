@@ -84,6 +84,26 @@ class LodestarProxy:
         else:
             self._health_config = {"enabled": True}
 
+        # Load local overrides from .lodestar/config.yaml
+        local_config_path = Path(".lodestar/config.yaml")
+        if local_config_path.exists():
+            try:
+                with open(local_config_path) as f:
+                    local_overrides = yaml.safe_load(f) or {}
+                
+                # Merge overrides into class attributes
+                if "routing" in local_overrides:
+                    self._routing_config.update(local_overrides["routing"])
+                if "costs" in local_overrides:
+                    self._costs_config.update(local_overrides["costs"])
+                if "health" in local_overrides:
+                    self._health_config.update(local_overrides["health"])
+                
+                logger.debug(f"Loaded local overrides from {local_config_path}")
+            except Exception as e:
+                logger.error(f"Error loading local overrides: {e}")
+
+
     def start(self) -> None:
         """Start all modules."""
         self.router.start()

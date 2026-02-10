@@ -2,7 +2,7 @@
 
 import subprocess
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -10,22 +10,36 @@ logger = logging.getLogger(__name__)
 class GPUMonitor:
     """Monitors GPU utilization, memory, and temperature using nvidia-smi."""
 
-    def __init__(self, host: Optional[str] = None) -> None:
+    def __init__(self, host: Optional[str] = None, user: Optional[str] = None) -> None:
         self.host = host
+        self.user = user
         self.available = self._check_nvidia_smi()
+
+    def _get_ssh_prefix(self) -> List[str]:
+        """Generate the SSH command prefix with proper options."""
+        target = f"{self.user}@{self.host}" if self.user else self.host
+        prefix: List[str] = [
+            "ssh",
+            "-o", "ConnectTimeout=3",
+            "-o", "BatchMode=yes",
+            "-o", "StrictHostKeyChecking=accept-new",
+            target
+        ]
+        return prefix
 
     def _check_nvidia_smi(self) -> bool:
         """Check if nvidia-smi is available (locally or remotely)."""
-        cmd = ["nvidia-smi", "-L"]
         if self.host:
-            cmd = ["ssh", "-o", "ConnectTimeout=2", self.host, "nvidia-smi -L"]
+            cmd = self._get_ssh_prefix() + ["nvidia-smi -L"]
+        else:
+            cmd = ["nvidia-smi", "-L"]
             
         try:
-            subprocess.run(cmd, capture_output=True, check=True)
+            subprocess.run(cmd, capture_output=True, check=True, text=True)
             return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
             if self.host:
-                logger.warning(f"Could not connect to GPU host {self.host} via SSH")
+                logger.warning(f"Could not connect to GPU host {self.host} (user: {self.user}) via SSH")
             else:
                 logger.debug("nvidia-smi not found locally")
             return False
@@ -41,14 +55,14 @@ class GPUMonitor:
 
         try:
             # query-gpu=gpu_name,utilization.gpu,memory.used,memory.total,temperature.gpu
-            query_cmd = "nvidia-smi --query-gpu=gpu_name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits"
+            query_str = "nvidia-smi --query-gpu=gpu_name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits"
             
             if self.host:
-                cmd = ["ssh", "-o", "ConnectTimeout=2", self.host, query_cmd]
+                cmd = self._get_ssh_prefix() + [query_str]
             else:
-                cmd = query_cmd.split()
+                cmd = query_str.split()
                 
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=5)
             
             # Simple single GPU parsing for now
             line = result.stdout.strip().split("\n")[0]
@@ -57,7 +71,7 @@ class GPUMonitor:
             if len(parts) >= 5:
                 mem_used = int(parts[2])
                 mem_total = int(parts[3])
-                mem_percent = round((mem_used / mem_total) * 100, 1) if mem_total > 0 else 0
+                mem_percent = round(float(mem_used) / float(mem_total) * 100.0, 1) if mem_total > 0 else 0.0
                 
                 return {
                     "status": "healthy",

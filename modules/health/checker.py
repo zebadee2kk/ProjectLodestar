@@ -15,8 +15,14 @@ class HealthChecker(LodestarPlugin):
         super().__init__(config)
         self.event_bus = event_bus
         self.router_url = config.get("router_url", "http://localhost:4000")
+        self.router_path = config.get("router_health_path", "/health")
         self.ollama_url = config.get("ollama_url", "http://192.168.120.211:11434")
+        self.timeout = config.get("timeout", 2.0)
         self._last_status: Dict[str, Any] = {}
+        
+        # Initialize GPU monitor if possible
+        from modules.health.gpu import GPUMonitor
+        self.gpu_monitor = GPUMonitor()
 
     def start(self) -> None:
         """Start the health checker."""
@@ -37,12 +43,16 @@ class HealthChecker(LodestarPlugin):
         }
 
         # Check Router (LiteLLM)
-        router_status = self._check_url(f"{self.router_url}/health", "router")
+        router_status = self._check_url(f"{self.router_url}{self.router_path}", "router")
         status["components"]["router"] = router_status
 
         # Check Ollama
         ollama_status = self._check_url(f"{self.ollama_url}/api/tags", "ollama")
         status["components"]["ollama"] = ollama_status
+
+        # Check GPU
+        gpu_status = self.gpu_monitor.check()
+        status["components"]["gpu"] = gpu_status
 
         # Determine overall status
         if router_status["status"] == "down" or ollama_status["status"] == "down":

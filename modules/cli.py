@@ -88,23 +88,63 @@ def cmd_route(proxy: LodestarProxy, args: argparse.Namespace) -> None:
 
 
 def cmd_status(proxy: LodestarProxy, args: argparse.Namespace) -> None:
-    """Show module health status."""
+    """Show module health status with hardware metrics."""
+    from rich.console import Console
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich.columns import Columns
+
     health = proxy.health_check()
-    print("=== Lodestar Module Status ===")
+    console = Console()
+
+    # Title
+    console.print(Panel("[bold cyan]🌟 Lodestar System Status[/bold cyan]", border_style="cyan"))
+
+    # Core Modules Table
+    module_table = Table(title="Core Modules", box=None, show_header=False)
+    for name, data in health.items():
+        if name == "health_checker": continue
+        
+        status = data.get("status", "unknown") if isinstance(data, dict) else str(data)
+        color = "green" if status == "healthy" else "red"
+        module_table.add_row(f"[bold]{name}[/bold]", f"[{color}]{status}[/color]")
     
-    # Flatten the display
-    for module_name, status in health.items():
-        if module_name == "health_checker" and isinstance(status, dict):
-            # Special handling for our new HealthChecker detailed output
-            print(f"  {module_name}: {status.get('status', 'unknown')}")
-            for comp, details in status.get("components", {}).items():
-                print(f"    - {comp}: {details.get('status', 'unknown')} ({details.get('latency_ms', '?')}ms)")
-        elif isinstance(status, dict):
-            state = status.get("status", "unknown")
-            enabled = status.get("enabled", "?")
-            print(f"  {module_name}: {state} (enabled={enabled})")
-        else:
-            print(f"  {module_name}: {status}")
+    # Components / Endpoints
+    comp_table = Table(title="Endpoints", box=None, show_header=False)
+    checker = health.get("health_checker", {})
+    components = checker.get("components", {})
+    
+    for comp, details in components.items():
+        if comp == "gpu": continue # Handle GPU separately for richer display
+        
+        st = details.get("status", "unknown")
+        color = "green" if st == "healthy" else "red"
+        lat = details.get('latency_ms', '?')
+        comp_table.add_row(f"  • {comp}", f"[{color}]{st}[/color]", f"({lat}ms)")
+
+    # GPU Hardware Section
+    gpu = components.get("gpu", {})
+    gpu_panel = None
+    if gpu.get("status") == "healthy":
+        gpu_panel = Panel(
+            f"[bold green]✓[/bold green] {gpu.get('name')}\n"
+            f"[dim]Temp:[/dim] [bold]{gpu.get('temp_c')}°C[/bold] | "
+            f"[dim]Load:[/dim] [bold]{gpu.get('load_pct')}%[/bold]\n"
+            f"[dim]VRAM:[/dim] [bold]{gpu.get('memory_used_mb')}/{gpu.get('memory_total_mb')} MiB[/bold] ({gpu.get('memory_pct')}%)",
+            title="GPU Hardware (T600)",
+            border_style="green",
+            expand=False
+        )
+    elif gpu.get("status") == "not_available":
+         gpu_panel = Panel("[dim]GPU Hardware: Not Detected[/dim]", border_style="dim", expand=False)
+    else:
+         gpu_panel = Panel(f"[bold red]![/bold red] GPU Error: {gpu.get('error', 'Unknown')}", border_style="red", expand=False)
+
+    # Layout Rendering
+    console.print(Columns([module_table, comp_table]))
+    if gpu_panel:
+        console.print(gpu_panel)
+    console.print("")
 
 
 def cmd_tournament(proxy: LodestarProxy, args: argparse.Namespace) -> None:

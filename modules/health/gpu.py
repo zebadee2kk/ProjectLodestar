@@ -10,16 +10,24 @@ logger = logging.getLogger(__name__)
 class GPUMonitor:
     """Monitors GPU utilization, memory, and temperature using nvidia-smi."""
 
-    def __init__(self) -> None:
+    def __init__(self, host: Optional[str] = None) -> None:
+        self.host = host
         self.available = self._check_nvidia_smi()
 
     def _check_nvidia_smi(self) -> bool:
-        """Check if nvidia-smi is available in the system."""
+        """Check if nvidia-smi is available (locally or remotely)."""
+        cmd = ["nvidia-smi", "-L"]
+        if self.host:
+            cmd = ["ssh", "-o", "ConnectTimeout=2", self.host, "nvidia-smi -L"]
+            
         try:
-            subprocess.run(["nvidia-smi", "-L"], capture_output=True, check=True)
+            subprocess.run(cmd, capture_output=True, check=True)
             return True
         except (subprocess.CalledProcessError, FileNotFoundError):
-            logger.debug("nvidia-smi not found or failed, GPU monitoring disabled")
+            if self.host:
+                logger.warning(f"Could not connect to GPU host {self.host} via SSH")
+            else:
+                logger.debug("nvidia-smi not found locally")
             return False
 
     def check(self) -> Dict[str, Any]:
@@ -33,11 +41,13 @@ class GPUMonitor:
 
         try:
             # query-gpu=gpu_name,utilization.gpu,memory.used,memory.total,temperature.gpu
-            cmd = [
-                "nvidia-smi",
-                "--query-gpu=gpu_name,utilization.gpu,memory.used,memory.total,temperature.gpu",
-                "--format=csv,noheader,nounits"
-            ]
+            query_cmd = "nvidia-smi --query-gpu=gpu_name,utilization.gpu,memory.used,memory.total,temperature.gpu --format=csv,noheader,nounits"
+            
+            if self.host:
+                cmd = ["ssh", "-o", "ConnectTimeout=2", self.host, query_cmd]
+            else:
+                cmd = query_cmd.split()
+                
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
             
             # Simple single GPU parsing for now

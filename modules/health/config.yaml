@@ -15,5 +15,8 @@ health:
   # Ollama server URL — set this to your Ollama host
   ollama_url: "http://192.168.120.211:11434"
 
+  # GPU Remote Host (optional) - if your GPU is on a different machine
+  gpu_ssh_host: "192.168.120.211"
+
   # Health check timeout in seconds
   timeout: 2

@@ -5,13 +5,22 @@ All notable changes to ProjectLodestar will be documented in this file.
 Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.2.0-alpha.1] - 2026-02-10
 
-### Planned
-- Model warm-up on router start
-- Connection pooling for T600
-- CSV/JSON export from cost storage
-- LLM-powered diff annotations (upgrade from heuristic)
+### Added
+- **Workbench:** `WorkbenchModule` — unified persistent project "brain" coordinating memory, context, and knowledge.
+- **Memory:** `MemoryModule` — persistent long-term storage of project interactions using Qdrant vector embeddings.
+- **Context:** `ContextModule` — stateful session management with message history persistence in SQLite.
+- **Knowledge:** `KnowledgeModule` — repository-wide code and documentation indexing for semantic RAG search.
+- **CLI:** `lodestar workbench {chat, index, search, sessions}` commands for interacting with the AI workbench.
+
+### Fixed
+- **Proxy:** Resolved circular dependency between `LodestarProxy` and `WorkbenchModule` using lazy initialization.
+- **Workbench:** Improved prompt augmentation with dual-layer context retrieval (RAG + Long-term memory).
+
+### Metrics
+- 13 new tests added for workbench modules.
+- 4 new modules integrated into the v2 core.
 
 ## [2.1.0-alpha.2] - 2026-02-10
 

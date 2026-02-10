@@ -1,0 +1,4 @@
+context:
+  enabled: true
+  sessions:
+    db_path: ".lodestar/sessions.db"

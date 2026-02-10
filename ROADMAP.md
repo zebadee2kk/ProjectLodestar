@@ -71,7 +71,7 @@
 ### 💡 Low Priority / Future
 
 **Advanced Features**
-- [ ] RAG support (document Q&A)
+- [x] RAG support (document Q&A) (`lodestar workbench index/search`)
 - [ ] Model fine-tuning pipeline
 - [ ] Multi-model consensus (ask 3, vote)
 - [ ] A/B testing framework
@@ -113,7 +113,7 @@
 **AI Agent Framework**
 - [ ] Multi-step task execution
 - [ ] Tool use (web search, shell, etc.)
-- [ ] Memory across sessions
+- [x] Memory across sessions (`lodestar workbench chat`)
 - [ ] Goal-oriented planning
 
 ---
@@ -172,4 +172,4 @@ Have an idea for v2?
 
 ---
 
-**Current Status:** v2.1.0-alpha.2 operational! 🚀
+**Current Status:** v2.2.0-alpha.1 (AI Workbench) operational! 🚀

@@ -1,4 +1,4 @@
-![Version](https://img.shields.io/badge/version-2.1.0--alpha.2-orange)
+![Version](https://img.shields.io/badge/version-2.2.0--alpha.1-orange)
 ![Status](https://img.shields.io/badge/status-active_development-blue)
 ![Branch](https://img.shields.io/badge/branch-develop-purple)
 ![Tests](https://img.shields.io/badge/tests-296_passed-brightgreen)
@@ -11,7 +11,7 @@ Lodestar is a high-performance orchestration layer for LLM-based development. It
 
 ---
 
-**Current Release:** `v2.1.0-alpha.2`  
+**Current Release:** `v2.2.0-alpha.1`  
 **Primary Integration Branch:** `develop`
 
 ---
@@ -170,6 +170,9 @@ lodestar config              # Setup credentials/hosts
 lodestar costs --dashboard   # Real-time cost TUI
 lodestar diff                # Visual AI diff
 lodestar run "python app.py" # Self-healing execution
+lodestar workbench index     # Index repository for RAG
+lodestar workbench chat "msg" # Persistent project-aware chat
+lodestar workbench search "q" # Semantic code search
 
 # Test Infrastructure
 ./scripts/test-lodestar.sh
@@ -251,7 +254,7 @@ Built with:
 
 ---
 
-**Status:** v1.0.0 - Production Ready ✅  
+**Status:** v2.2.0-alpha.1 - Build 2.2-stable ✅  
 **Last Updated:** February 2026
 
 ✨ SSH authentication configured

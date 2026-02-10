@@ -1,0 +1,5 @@
+workbench:
+  enabled: true
+  # Workbench unifies and inherits from other module configs,
+  # but can have its own overrides here if needed.
+  default_session_name: "Workbench Session"

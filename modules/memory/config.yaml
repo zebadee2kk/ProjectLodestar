@@ -1,0 +1,10 @@
+memory:
+  enabled: true
+  embeddings:
+    model: "text-embedding-3-small"
+    dimensions: 1536
+  store:
+    url: "http://localhost:6333"
+    path: ".lodestar/memory.db"
+    collection: "lodestar_memories"
+    vector_size: 1536

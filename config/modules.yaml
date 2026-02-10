@@ -16,3 +16,15 @@ modules:
 
   tournament:
     enabled: true
+
+  memory:
+    enabled: true
+
+  context:
+    enabled: true
+
+  knowledge:
+    enabled: true
+
+  workbench:
+    enabled: true

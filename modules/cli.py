@@ -246,6 +246,60 @@ def cmd_diff(proxy: LodestarProxy, args: argparse.Namespace) -> None:
         preview.stop()
 
 
+def cmd_workbench(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Handle workbench commands (chat, index, search, sessions)."""
+    from rich.console import Console
+    from rich.table import Table
+    console = Console()
+
+    if args.workbench_action == "index":
+        console.print("[bold cyan]🔍 Indexing Repository...[/bold cyan]")
+        result = proxy.workbench.orchestrator.knowledge.index_repository(".")
+        console.print(f"[green]✅ Indexing completed: {result['indexed_files']} files indexed, {result['errors']} errors.[/green]")
+
+    elif args.workbench_action == "chat":
+        prompt = " ".join(args.prompt)
+        if not prompt:
+            console.print("[red]Error: Provide a prompt for chat.[/red]")
+            return
+        
+        console.print(f"[dim]Processing with persistent context...[/dim]")
+        result = proxy.workbench.chat(prompt, session_id=args.session)
+        
+        console.print("\n[bold green]🤖 Response:[/bold green]")
+        console.print(result["response"])
+        console.print(f"\n[dim]Session: {result['session_id']} | Model: {result['routing']['model']} | Cost: ${result['routing']['cost']:.4f}[/dim]")
+        if result["knowledge_used"]:
+             console.print(f"[dim]Knowledge source: {', '.join(result['knowledge_used'])}[/dim]")
+
+    elif args.workbench_action == "search":
+        query = " ".join(args.query)
+        console.print(f"[bold cyan]🔍 Semantic Search: {query}[/bold cyan]")
+        results = proxy.workbench.orchestrator.knowledge.search(query)
+        
+        table = Table(box=None)
+        table.add_column("Score", style="dim")
+        table.add_column("Path", style="cyan")
+        table.add_column("Snippet", style="white")
+        
+        for r in results:
+            table.add_row(f"{r['score']:.2f}", r['metadata'].get('path', '?'), r['text'][:100].replace("\n", " ") + "...")
+        console.print(table)
+
+    elif args.workbench_action == "sessions":
+        sessions = proxy.workbench.orchestrator.context.session_manager.list_sessions()
+        table = Table(title="AI Workbench Sessions")
+        table.add_column("ID", style="dim")
+        table.add_column("Name", style="cyan")
+        table.add_column("Last Updated", style="green")
+        
+        for s in sessions:
+            table.add_row(s["id"][:8], s["name"], s["updated_at"])
+        console.print(table)
+    else:
+        console.print("[yellow]Usage: lodestar workbench {chat,index,search,sessions}[/yellow]")
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
@@ -253,6 +307,9 @@ def build_parser() -> argparse.ArgumentParser:
         description="ProjectLodestar v2 - AI development environment CLI",
     )
     subparsers = parser.add_subparsers(dest="action", help="Available commands")
+
+    # cockpit
+    subparsers.add_parser("cockpit", help="Launch unified developer cockpit dashboard")
 
     # costs
     cost_parser = subparsers.add_parser("costs", help="Show cost summary report")
@@ -310,7 +367,33 @@ def build_parser() -> argparse.ArgumentParser:
     # config
     subparsers.add_parser("config", help="Configure local settings and credentials")
 
+    # workbench
+    wb_parser = subparsers.add_parser("workbench", help="AI Project Workbench (persistent memory & knowledge)")
+    wb_sub = wb_parser.add_subparsers(dest="workbench_action")
+    
+    # workbench index
+    wb_sub.add_parser("index", help="Index the current repository for semantic search")
+    
+    # workbench chat
+    wb_chat = wb_sub.add_parser("chat", help="Chat with perspective context and knowledge")
+    wb_chat.add_argument("prompt", nargs="+", help="User prompt")
+    wb_chat.add_argument("--session", help="Session ID to continue")
+    
+    # workbench search
+    wb_search = wb_sub.add_parser("search", help="Semantic search across project knowledge")
+    wb_search.add_argument("query", nargs="+", help="Search query")
+    
+    # workbench sessions
+    wb_sub.add_parser("sessions", help="List persistent work sessions")
+
     return parser
+
+
+def cmd_cockpit(proxy: LodestarProxy, args: argparse.Namespace) -> None:
+    """Launch the unified cockpit dashboard."""
+    from modules.cockpit.dashboard import CockpitDashboard
+    dashboard = CockpitDashboard(proxy)
+    dashboard.run()
 
 
 def main(argv: Optional[List[str]] = None) -> None:
@@ -319,8 +402,8 @@ def main(argv: Optional[List[str]] = None) -> None:
     args = parser.parse_args(argv)
 
     if not args.action:
-        parser.print_help()
-        sys.exit(0)
+        # Default to cockpit if no action provided
+        args.action = "cockpit"
 
     proxy = LodestarProxy()
     proxy.start()
@@ -334,6 +417,8 @@ def main(argv: Optional[List[str]] = None) -> None:
         "run": cmd_run,
         "cache": cmd_cache,
         "config": cmd_config,
+        "workbench": cmd_workbench,
+        "cockpit": cmd_cockpit,
     }
 
     try:

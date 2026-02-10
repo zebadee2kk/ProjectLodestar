@@ -15,6 +15,7 @@ from modules.routing.router import SemanticRouter
 from modules.routing.fallback import FallbackExecutor, RequestResult
 from modules.costs.tracker import CostTracker
 from modules.health.checker import HealthChecker
+from modules.workbench import WorkbenchModule
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,9 @@ class LodestarProxy:
         # Initialize Cache
         from modules.routing.cache import CacheManager
         self.cache = CacheManager()
+
+        # Initialize Workbench
+        self.workbench = WorkbenchModule(self._modules_config.get("workbench", {}), proxy=self)
 
     def _load_configs(self) -> None:
         """Load module configurations from YAML files."""
@@ -109,6 +113,7 @@ class LodestarProxy:
         self.router.start()
         self.cost_tracker.start()
         self.health_checker.start()
+        self.workbench.start()
         logger.info("LodestarProxy started")
 
     def stop(self) -> None:
@@ -116,6 +121,7 @@ class LodestarProxy:
         self.router.stop()
         self.cost_tracker.stop()
         self.health_checker.stop()
+        self.workbench.stop()
         logger.info("LodestarProxy stopped")
 
     def handle_request(
@@ -247,4 +253,5 @@ class LodestarProxy:
             "router": self.router.health_check(),
             "cost_tracker": self.cost_tracker.health_check(),
             "health_checker": self.health_checker.health_check(),
+            "workbench": self.workbench.health_check(),
         }

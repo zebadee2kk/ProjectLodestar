@@ -1,0 +1,17 @@
+knowledge:
+  enabled: true
+  indexer:
+    chunk_size: 1000
+    excludes:
+      - ".git"
+      - "__pycache__"
+      - ".lodestar"
+      - "node_modules"
+      - ".pytest_cache"
+    extensions:
+      - ".py"
+      - ".md"
+      - ".yaml"
+      - ".yml"
+      - ".json"
+      - ".txt"

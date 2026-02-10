@@ -333,6 +333,7 @@ def main(argv: Optional[List[str]] = None) -> None:
         "diff": cmd_diff,
         "run": cmd_run,
         "cache": cmd_cache,
+        "config": cmd_config,
     }
 
     try:

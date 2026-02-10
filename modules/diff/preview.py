@@ -165,16 +165,11 @@ class DiffPreview(LodestarPlugin):
             blocks: List of annotated DiffBlocks.
         """
         for block in blocks:
-            # Create content string for syntax highlighting
-            # We strip the +/- markers for the syntax view, but keep them for diff view
-            # For a proper diff view with Rich, we might valid code.
-            # Simplified approach: Render raw lines, colored by diff type
-            
             content = Panel(
                 self._build_renderable_content(block),
-                title=f"{block.file_path} (L{block.old_start} -> L{block.new_start})",
-                subtitle=f"AI: {block.annotation}" if block.annotation else None,
-                border_style="blue" if block.annotation else "dim",
+                title=f"[bold blue]{block.file_path}[/bold blue] (L{block.old_start} -> L{block.new_start})",
+                subtitle=f"[italic]AI: {block.annotation}[/italic]" if block.annotation else "[dim]Heuristic explanation[/dim]",
+                border_style="green" if block.annotation else "white",
                 expand=False
             )
             self.console.print(content)
@@ -182,14 +177,16 @@ class DiffPreview(LodestarPlugin):
 
     def _build_renderable_content(self, block: DiffBlock) -> str:
         """Helper to build text content for a block."""
+        from rich.markup import escape
         output = []
         for line in block.lines:
+            escaped_line = escape(line)
             if line.startswith("+"):
-                output.append(f"[green]{line}[/green]")
+                output.append(f"[green]{escaped_line}[/green]")
             elif line.startswith("-"):
-                output.append(f"[red]{line}[/red]")
+                output.append(f"[red]{escaped_line}[/red]")
             else:
-                output.append(f"[dim]{line}[/dim]")
+                output.append(f"[dim]{escaped_line}[/dim]")
         return "\n".join(output)
 
     @staticmethod

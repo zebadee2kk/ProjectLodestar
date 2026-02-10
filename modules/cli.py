@@ -164,7 +164,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="lodestar",
         description="ProjectLodestar v2 - AI development environment CLI",
     )
-    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+    subparsers = parser.add_subparsers(dest="action", help="Available commands")
 
     # costs
     cost_parser = subparsers.add_parser("costs", help="Show cost summary report")
@@ -227,7 +227,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    if not args.command:
+    if not args.action:
         parser.print_help()
         sys.exit(0)
 
@@ -245,7 +245,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     }
 
     try:
-        commands[args.command](proxy, args)
+        commands[args.action](proxy, args)
     finally:
         proxy.stop()
 

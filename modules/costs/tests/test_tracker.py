@@ -59,6 +59,25 @@ class TestCostCalculation:
         cost = tracker.calculate_cost("unknown-model", 1000, 500)
         assert cost == 0.0
 
+    def test_zero_tokens_zero_cost(self, tracker):
+        cost = tracker.calculate_cost("claude-opus", 0, 0)
+        assert cost == 0.0
+
+    def test_large_token_count(self, tracker):
+        # 1M input * $15/M + 1M output * $75/M = $15 + $75 = $90
+        cost = tracker.calculate_cost("claude-opus", 1_000_000, 1_000_000)
+        assert cost == 90.0
+
+    def test_all_model_costs_defined(self, tracker):
+        """Verify all 8 configured models have cost entries."""
+        expected_models = [
+            "gpt-3.5-turbo", "local-llama", "claude-sonnet", "claude-opus",
+            "gpt-4o-mini", "gpt-4o", "grok-beta", "gemini-pro",
+        ]
+        for model in expected_models:
+            cost = tracker.calculate_cost(model, 1000, 1000)
+            assert isinstance(cost, float)
+
 
 class TestRecording:
 
@@ -79,6 +98,22 @@ class TestRecording:
         entry = tracker.record("claude-sonnet", 1000, 500)
         assert entry["cost"] > 0
         assert entry["savings"] == 0.0  # same as baseline
+
+    def test_record_zero_tokens(self, tracker):
+        entry = tracker.record("claude-sonnet", 0, 0)
+        assert entry["cost"] == 0.0
+        assert entry["savings"] == 0.0
+
+    def test_record_default_task_empty(self, tracker):
+        entry = tracker.record("gpt-3.5-turbo", 100, 50)
+        assert entry["task"] == ""
+
+    def test_record_increments_count(self, tracker):
+        for i in range(10):
+            tracker.record("gpt-3.5-turbo", 100, 50)
+        assert len(tracker._records) == 10
+        health = tracker.health_check()
+        assert health["records_count"] == 10
 
 
 class TestAggregation:
@@ -106,6 +141,21 @@ class TestAggregation:
 
     def test_savings_percentage_empty(self, tracker):
         assert tracker.savings_percentage() == 0.0
+
+    def test_savings_percentage_mixed(self, tracker):
+        """50% free, 50% baseline should yield ~50% savings."""
+        tracker.record("gpt-3.5-turbo", 1000, 500)  # free
+        tracker.record("claude-sonnet", 1000, 500)   # baseline
+        pct = tracker.savings_percentage()
+        assert 45.0 <= pct <= 55.0
+
+    def test_total_cost_precision(self, tracker):
+        """Verify floating-point costs don't accumulate rounding errors."""
+        for _ in range(100):
+            tracker.record("gemini-pro", 1000, 1000)
+        total = tracker.total_cost()
+        # gemini-pro: (1000*0.075 + 1000*0.30)/1M = 0.000375 per req
+        assert total == pytest.approx(0.0375, abs=0.001)
 
 
 class TestBudget:
@@ -193,3 +243,22 @@ class TestStorageIntegration:
         assert t._storage._conn is not None
         t.stop()
         assert t._storage._conn is None
+
+    def test_data_survives_restart(self, tmp_path):
+        """Records persist in SQLite across tracker stop/start cycles."""
+        db_path = str(tmp_path / "costs.db")
+        cfg = {"enabled": True, "database_path": db_path, "baseline_model": "claude-sonnet"}
+
+        t1 = CostTracker(cfg)
+        t1.start()
+        t1.record("gpt-3.5-turbo", 1000, 500, task="bug_fix")
+        t1.stop()
+
+        t2 = CostTracker(cfg)
+        t2.start()
+        # In-memory ledger is empty, but SQLite has the data
+        assert len(t2._records) == 0
+        assert t2._storage.record_count() == 1
+        records = t2._storage.query_all()
+        assert records[0]["model"] == "gpt-3.5-turbo"
+        t2.stop()

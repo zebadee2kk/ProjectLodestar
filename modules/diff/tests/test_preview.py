@@ -149,3 +149,106 @@ class TestFormatting:
         )
         output = preview.format_block(block)
         assert "AI" not in output
+
+    def test_format_annotation_without_confidence(self, preview):
+        block = DiffBlock(
+            file_path="test.py",
+            old_start=1,
+            new_start=1,
+            lines=["+x = 1"],
+            annotation="Some annotation",
+            confidence=None,
+        )
+        output = preview.format_block(block)
+        assert "AI:" in output
+        assert "%" not in output
+
+    def test_format_empty_lines(self, preview):
+        block = DiffBlock(file_path="test.py", old_start=1, new_start=1, lines=[])
+        output = preview.format_block(block)
+        assert "test.py" in output
+
+    def test_format_shows_line_numbers(self, preview):
+        block = DiffBlock(file_path="f.py", old_start=42, new_start=50, lines=["+x"])
+        output = preview.format_block(block)
+        assert "42" in output
+        assert "50" in output
+
+
+class TestMultiFileDiff:
+    """Tests for diffs containing multiple files."""
+
+    MULTI_FILE_DIFF = """\
+diff --git a/foo.py b/foo.py
+--- a/foo.py
++++ b/foo.py
+@@ -1,3 +1,4 @@
+ import sys
++import os
+ def foo():
+diff --git a/bar.py b/bar.py
+--- a/bar.py
++++ b/bar.py
+@@ -5,2 +5,3 @@
+-    old = 1
++    new = 2
++    extra = 3
+"""
+
+    def test_two_files_produce_two_blocks(self, preview):
+        blocks = preview.parse_unified_diff(self.MULTI_FILE_DIFF)
+        assert len(blocks) == 2
+
+    def test_file_paths_correct(self, preview):
+        blocks = preview.parse_unified_diff(self.MULTI_FILE_DIFF)
+        assert blocks[0].file_path == "foo.py"
+        assert blocks[1].file_path == "bar.py"
+
+    def test_each_block_has_own_lines(self, preview):
+        blocks = preview.parse_unified_diff(self.MULTI_FILE_DIFF)
+        # foo.py block has +import os
+        foo_added = [l for l in blocks[0].lines if l.startswith("+")]
+        assert any("import os" in l for l in foo_added)
+        # bar.py block has -old and +new, +extra
+        bar_added = [l for l in blocks[1].lines if l.startswith("+")]
+        assert len(bar_added) == 2
+
+
+class TestHunkHeaderEdgeCases:
+    """Edge cases for _parse_hunk_header."""
+
+    def test_hunk_without_count(self, preview):
+        """@@ -5 +7 @@ should parse as old_start=5, new_start=7."""
+        old, new = DiffPreview._parse_hunk_header("@@ -5 +7 @@")
+        assert old == 5
+        assert new == 7
+
+    def test_hunk_with_trailing_context(self, preview):
+        """@@ -10,5 +12,7 @@ def some_function()"""
+        old, new = DiffPreview._parse_hunk_header(
+            "@@ -10,5 +12,7 @@ def some_function()"
+        )
+        assert old == 10
+        assert new == 12
+
+    def test_large_line_numbers(self, preview):
+        old, new = DiffPreview._parse_hunk_header("@@ -99999,10 +100005,12 @@")
+        assert old == 99999
+        assert new == 100005
+
+
+class TestDiffBlockDataclass:
+
+    def test_defaults(self):
+        block = DiffBlock(file_path="f.py", old_start=1, new_start=1)
+        assert block.lines == []
+        assert block.annotation is None
+        assert block.confidence is None
+
+    def test_custom_values(self):
+        block = DiffBlock(
+            file_path="f.py", old_start=10, new_start=20,
+            lines=["+a", "-b"], annotation="test", confidence=0.8
+        )
+        assert len(block.lines) == 2
+        assert block.annotation == "test"

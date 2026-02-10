@@ -103,3 +103,49 @@ class TestFallbackExecutor:
         assert result.success is True
         assert result.model == "c"
         assert len(result.attempts) == 2
+
+    def test_different_exception_types(self, executor):
+        """Various exception types should all be caught."""
+        errors = iter([ConnectionError("conn"), TimeoutError("timeout"),
+                       ValueError("bad")])
+
+        def rotating_errors(model):
+            raise next(errors)
+
+        result = executor.execute("a", ["b", "c"], rotating_errors)
+        assert result.success is False
+        assert len(result.attempts) == 3
+        assert "conn" in result.attempts[0][1]
+        assert "timeout" in result.attempts[1][1]
+        assert "bad" in result.attempts[2][1]
+
+    def test_request_fn_returns_none(self, executor):
+        """None is a valid response (not an error)."""
+        result = executor.execute("model-a", [], lambda m: None)
+        assert result.success is True
+        assert result.response is None
+
+    def test_request_fn_returns_empty_string(self, executor):
+        result = executor.execute("model-a", [], lambda m: "")
+        assert result.success is True
+        assert result.response == ""
+
+    def test_attempt_error_messages_preserved(self, executor):
+        """Each failed attempt's error message should be preserved in full."""
+        def specific_errors(model):
+            raise RuntimeError(f"Error from {model}: connection refused on port 8080")
+
+        result = executor.execute("primary", ["backup"], specific_errors)
+        assert "connection refused on port 8080" in result.attempts[0][1]
+        assert "Error from backup" in result.attempts[1][1]
+
+    def test_duplicate_models_in_chain(self, executor):
+        """Same model appearing twice in chain should both be tried."""
+        call_count = {"model-a": 0}
+
+        def track_calls(model):
+            call_count[model] = call_count.get(model, 0) + 1
+            raise RuntimeError("fail")
+
+        executor.execute("model-a", ["model-a"], track_calls)
+        assert call_count["model-a"] == 2

@@ -203,3 +203,96 @@ class TestFormatMatch:
         output = runner.format_match(result)
         assert "FAIL" in output
         assert "model-b is down" in output
+
+    def test_format_no_winner_yet(self, runner):
+        result = runner.run_match("test", mock_request_fn)
+        output = runner.format_match(result)
+        assert "not yet voted" in output
+
+    def test_format_long_prompt_truncated(self, runner):
+        long_prompt = "x" * 200
+        result = runner.run_match(long_prompt, mock_request_fn)
+        output = runner.format_match(result)
+        assert "..." in output
+
+    def test_format_shows_latency(self, runner):
+        result = runner.run_match("test", mock_request_fn)
+        output = runner.format_match(result)
+        assert "ms" in output
+
+
+class TestTournamentEdgeCases:
+
+    def test_all_models_fail(self, runner):
+        def all_fail(model, prompt):
+            raise RuntimeError(f"{model} crashed")
+
+        result = runner.run_match("test", all_fail)
+        assert all(not m.success for m in result.matches)
+        assert all(m.error is not None for m in result.matches)
+
+    def test_vote_on_all_failed_match(self, runner):
+        def all_fail(model, prompt):
+            raise RuntimeError("down")
+
+        result = runner.run_match("test", all_fail)
+        with pytest.raises(ValueError, match="not in successful participants"):
+            runner.vote(result, "model-a")
+
+    def test_revote_overwrites_winner(self, runner):
+        result = runner.run_match("test", mock_request_fn)
+        runner.vote(result, "model-a")
+        assert result.winner == "model-a"
+        runner.vote(result, "model-b")
+        assert result.winner == "model-b"
+
+    def test_draw_after_vote(self, runner):
+        result = runner.run_match("test", mock_request_fn)
+        runner.vote(result, "model-a")
+        runner.draw(result)
+        assert result.winner == "draw"
+
+    def test_request_fn_returns_none(self, runner):
+        result = runner.run_match("test", lambda m, p: None)
+        # None is coerced to string "None"
+        assert result.matches[0].success is True
+        assert result.matches[0].response == "None"
+
+    def test_request_fn_returns_empty_string(self, runner):
+        result = runner.run_match("test", lambda m, p: "")
+        assert result.matches[0].success is True
+        assert result.matches[0].response == ""
+
+    def test_draw_affects_leaderboard(self, runner):
+        """Draws should count in total matches, reducing win rate."""
+        result = runner.run_match("test", mock_request_fn)
+        runner.vote(result, "model-a")
+        result2 = runner.run_match("test", mock_request_fn)
+        runner.draw(result2)
+        board = runner.leaderboard()
+        # model-a: 1 win, 0 loss, 1 draw = 50% win rate
+        assert board["model-a"]["win_rate"] == 50.0
+
+    def test_health_check_after_matches(self, runner):
+        runner.run_match("test", mock_request_fn)
+        runner.vote(runner.history()[0], "model-a")
+        health = runner.health_check()
+        assert health["matches_run"] == 1
+        assert health["models_tracked"] == 2
+
+    def test_history_returns_copy(self, runner):
+        runner.run_match("test", mock_request_fn)
+        history = runner.history()
+        history.clear()
+        assert len(runner.history()) == 1  # original unchanged
+
+    def test_match_result_dataclass(self):
+        m = MatchResult(model="test", response="ok", latency_ms=42.5, success=True)
+        assert m.model == "test"
+        assert m.latency_ms == 42.5
+        assert m.error is None
+
+    def test_tournament_result_dataclass(self):
+        r = TournamentResult(prompt="test", matches=[])
+        assert r.winner is None
+        assert r.timestamp is not None

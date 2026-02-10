@@ -65,7 +65,52 @@ class TestMainCLI:
         assert "model-a" in captured.out
         assert "model-b" in captured.out
 
+    def test_route_shows_fallback_chain(self, capsys):
+        main(["route", "review", "this", "code"])
+        captured = capsys.readouterr()
+        assert "Task:" in captured.out
+
+    def test_tournament_with_three_models(self, capsys):
+        main(["tournament", "test", "m1", "m2", "m3"])
+        captured = capsys.readouterr()
+        assert "m1" in captured.out
+        assert "m2" in captured.out
+        assert "m3" in captured.out
+
     def test_no_command_shows_help(self, capsys):
         with pytest.raises(SystemExit) as exc_info:
             main([])
         assert exc_info.value.code == 0
+
+
+class TestCLIEdgeCases:
+
+    def test_route_missing_prompt_exits(self):
+        """Route command without prompt should cause argparse error."""
+        with pytest.raises(SystemExit) as exc_info:
+            main(["route"])
+        assert exc_info.value.code != 0
+
+    def test_tournament_missing_models_exits(self):
+        """Tournament without models should cause argparse error."""
+        with pytest.raises(SystemExit) as exc_info:
+            main(["tournament", "prompt"])
+        assert exc_info.value.code != 0
+
+    def test_status_output_has_modules(self, capsys):
+        main(["status"])
+        output = capsys.readouterr().out
+        assert "router" in output
+        assert "cost_tracker" in output
+
+    def test_costs_shows_zero_for_fresh_session(self, capsys):
+        main(["costs"])
+        output = capsys.readouterr().out
+        assert "$0.0000" in output
+
+    def test_multiple_commands_sequentially(self, capsys):
+        """CLI should work for multiple sequential invocations."""
+        main(["status"])
+        main(["costs"])
+        main(["route", "fix", "a", "bug"])
+        # No error means all three worked

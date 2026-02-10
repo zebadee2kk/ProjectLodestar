@@ -169,7 +169,96 @@ class TestCleanup:
         assert deleted == 1
         assert storage.record_count() == 1
 
+    def test_cleanup_all_with_zero_retention(self, storage, sample_record):
+        storage.insert(sample_record)
+        storage.insert(sample_record)
+        # Backdate all records to 1 day ago — 0-day retention should remove them
+        old_ts = (datetime.now() - timedelta(days=1)).isoformat()
+        storage._conn.execute("UPDATE cost_records SET timestamp = ?", (old_ts,))
+        storage._conn.commit()
+        deleted = storage.cleanup(retention_days=0)
+        assert deleted == 2
+        assert storage.record_count() == 0
+
     def test_not_connected_raises(self, tmp_path):
         s = CostStorage(str(tmp_path / "nc.db"))
         with pytest.raises(RuntimeError, match="not connected"):
             s.cleanup()
+
+
+class TestStorageEdgeCases:
+
+    def test_close_sets_connection_none(self, tmp_path):
+        s = CostStorage(str(tmp_path / "close_test.db"))
+        s.connect()
+        assert s._conn is not None
+        s.close()
+        assert s._conn is None
+
+    def test_close_idempotent(self, tmp_path):
+        s = CostStorage(str(tmp_path / "close_test.db"))
+        s.connect()
+        s.close()
+        s.close()  # Should not raise
+        assert s._conn is None
+
+    def test_reconnect_after_close(self, tmp_path):
+        db_path = str(tmp_path / "reconnect.db")
+        s = CostStorage(db_path)
+        s.connect()
+        s.insert({"model": "x", "tokens_in": 100, "tokens_out": 50,
+                  "cost": 0.01, "baseline_cost": 0.02, "savings": 0.01, "task": "test"})
+        s.close()
+        s.connect()
+        # Data persists across reconnect
+        assert s.record_count() == 1
+        s.close()
+
+    def test_insert_empty_task(self, storage):
+        record = {
+            "model": "gpt-3.5-turbo", "tokens_in": 100, "tokens_out": 50,
+            "cost": 0.0, "baseline_cost": 0.01, "savings": 0.01, "task": "",
+        }
+        storage.insert(record)
+        records = storage.query_all()
+        assert records[0]["task"] == ""
+
+    def test_insert_no_task_key(self, storage):
+        record = {
+            "model": "gpt-3.5-turbo", "tokens_in": 100, "tokens_out": 50,
+            "cost": 0.0, "baseline_cost": 0.01, "savings": 0.01,
+        }
+        storage.insert(record)
+        records = storage.query_all()
+        assert records[0]["task"] == ""
+
+    def test_large_token_counts(self, storage):
+        record = {
+            "model": "gpt-4o", "tokens_in": 1_000_000, "tokens_out": 500_000,
+            "cost": 500.0, "baseline_cost": 600.0, "savings": 100.0, "task": "big",
+        }
+        storage.insert(record)
+        records = storage.query_all()
+        assert records[0]["tokens_in"] == 1_000_000
+        assert records[0]["cost_usd"] == 500.0
+
+    def test_query_all_ordering(self, storage, sample_record):
+        """Records should be returned newest-first."""
+        storage.insert({**sample_record, "task": "first"})
+        storage.insert({**sample_record, "task": "second"})
+        records = storage.query_all()
+        # Last inserted should be first in results (DESC order)
+        assert records[0]["task"] == "second"
+
+    def test_total_cost_with_mixed_models(self, multi_model_storage):
+        total = multi_model_storage.total_cost()
+        # 0.0 + 0.0105 + 0.021 + 0.005 = 0.0365
+        assert total == pytest.approx(0.0365, abs=0.0001)
+
+    def test_db_directory_created(self, tmp_path):
+        deep_path = str(tmp_path / "a" / "b" / "c" / "costs.db")
+        s = CostStorage(deep_path)
+        s.connect()
+        s.close()
+        # Directory should exist now
+        assert (tmp_path / "a" / "b" / "c").exists()

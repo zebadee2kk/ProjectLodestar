@@ -136,3 +136,87 @@ class TestProxyCostTracking:
         entry = result["cost_entry"]
         assert entry["tokens_in"] == 0
         assert entry["tokens_out"] == 0
+
+    def test_cost_accumulates_across_requests(self, proxy):
+        proxy.handle_request("first")
+        proxy.handle_request("second")
+        proxy.handle_request("third")
+        summary = proxy.cost_tracker.summary()
+        assert summary["total_requests"] == 3
+
+
+class TestProxyFullPipeline:
+    """Integration tests for the complete request pipeline."""
+
+    def test_classify_route_execute_record(self, proxy):
+        """Full pipeline: classify -> route -> execute -> cost record -> event."""
+        events = []
+        proxy.event_bus.subscribe("request_completed", lambda d: events.append(d))
+
+        result = proxy.handle_request(
+            "fix the login crash",
+            request_fn=lambda m: f"Fixed by {m}",
+            tokens_in=1000,
+            tokens_out=500,
+        )
+
+        # Verify all pipeline stages
+        assert result["task"] in ("bug_fix", "code_generation", "general")
+        assert result["model"] is not None
+        assert result["result"].success is True
+        assert result["cost_entry"]["tokens_in"] == 1000
+        assert len(events) == 1
+        assert events[0]["success"] is True
+
+    def test_failed_request_still_records_cost(self, proxy):
+        """Even when all models fail, cost should be recorded."""
+        def always_fail(model):
+            raise RuntimeError("down")
+
+        result = proxy.handle_request(
+            "review code",
+            request_fn=always_fail,
+            task_override="code_review",
+            tokens_in=500,
+            tokens_out=200,
+        )
+        assert result["result"].success is False
+        assert result["cost_entry"]["tokens_in"] == 500
+
+    def test_event_data_completeness(self, proxy):
+        """Published event should contain all expected fields."""
+        events = []
+        proxy.event_bus.subscribe("request_completed", lambda d: events.append(d))
+        proxy.handle_request("test")
+        event = events[0]
+        assert "task" in event
+        assert "model" in event
+        assert "success" in event
+        assert "cost" in event
+        assert "savings" in event
+
+    def test_both_overrides(self, proxy):
+        """Model and task overrides should both be respected."""
+        result = proxy.handle_request(
+            "anything",
+            task_override="code_review",
+            model_override="claude-opus",
+        )
+        assert result["task"] == "code_review"
+        assert result["model"] == "claude-opus"
+
+    def test_dry_run_no_fallback(self, proxy):
+        """Dry run (no request_fn) should not trigger fallback."""
+        result = proxy.handle_request("review this", task_override="code_review")
+        assert result["result"].success is True
+        assert result["result"].response is None
+
+    def test_missing_config_uses_defaults(self, tmp_path):
+        """Proxy should work even with missing config files."""
+        config_dir = tmp_path / "empty_config"
+        config_dir.mkdir()
+        p = LodestarProxy(config_dir=str(config_dir))
+        p.start()
+        result = p.handle_request("test prompt")
+        assert result["model"] is not None
+        p.stop()

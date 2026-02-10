@@ -1,134 +1,142 @@
-"""Tests for the heuristic diff annotator."""
+"""Tests for the LLM-powered diff annotator."""
+
+from unittest.mock import MagicMock, patch
+import pytest
 
 from modules.diff.annotator import DiffAnnotator
 
 
-class TestDiffAnnotator:
+class MockProxy:
+    """Minimal proxy mock for DiffAnnotator tests."""
+
+    def __init__(self, response_text="Refactored for clarity", success=True):
+        self._response_text = response_text
+        self._success = success
+
+    def handle_request(self, prompt, task_override=None):
+        result = MagicMock()
+        result.success = self._success
+        result.response = self._response_text if self._success else None
+        return {"result": result}
+
+
+class TestAnnotateWithLLM:
+    """Tests for the LLM-powered annotate() path."""
 
     def setup_method(self):
-        self.annotator = DiffAnnotator()
+        self.proxy = MockProxy()
+        self.annotator = DiffAnnotator(self.proxy)
 
-    def test_function_definition_added(self):
-        lines = ["+def new_function():"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Function definition" in text
+    def test_annotate_returns_tuple(self):
+        text, conf = self.annotator.annotate("test.py", ["+import os"])
+        assert isinstance(text, str)
+        assert isinstance(conf, float)
+
+    def test_annotate_success_returns_llm_response(self):
+        text, conf = self.annotator.annotate("test.py", ["+import os"])
+        assert text == "Refactored for clarity"
         assert conf == 0.9
 
-    def test_class_definition_added(self):
-        lines = ["+class MyClass:"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Class definition" in text
-
-    def test_import_modified(self):
-        lines = ["+import os"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Import" in text
-        assert conf == 0.95
-
-    def test_removed_function(self):
-        lines = ["-def old_function():"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "removed" in text.lower()
-
-    def test_pure_additions(self):
-        lines = ["+x = 1", "+y = 2"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Added 2 line(s)" in text
-
-    def test_pure_removals(self):
-        lines = ["-x = 1", "-y = 2", "-z = 3"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Removed 3 line(s)" in text
-
-    def test_mixed_changes(self):
-        lines = ["-old = 1", "+new = 2"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Modified" in text
-
-    def test_no_changes(self):
-        lines = [" unchanged line"]
-        text, conf = self.annotator.annotate_lines(lines)
+    def test_annotate_empty_lines_returns_no_changes(self):
+        text, conf = self.annotator.annotate("test.py", [])
         assert "No changes" in text
         assert conf == 1.0
 
-    def test_empty_lines(self):
-        text, conf = self.annotator.annotate_lines([])
-        assert "No changes" in text
+    def test_annotate_passes_file_path_in_prompt(self):
+        proxy = MagicMock()
+        result = MagicMock()
+        result.success = True
+        result.response = "Explanation"
+        proxy.handle_request.return_value = {"result": result}
 
-    def test_return_value_changed(self):
-        lines = ["+    return 42"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Return value" in text
-        assert conf == 0.8
+        annotator = DiffAnnotator(proxy)
+        annotator.annotate("src/utils.py", ["+x = 1"])
 
-    def test_raise_exception_modified(self):
-        lines = ["+    raise ValueError('bad input')"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Exception handling" in text
-        assert conf == 0.85
+        call_args = proxy.handle_request.call_args
+        assert "src/utils.py" in call_args.kwargs.get("prompt", call_args[1].get("prompt", "")) or \
+               "src/utils.py" in str(call_args)
 
-    def test_conditional_logic(self):
-        lines = ["+    if x > 10:"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Conditional logic" in text
-        assert conf == 0.7
+    def test_annotate_passes_task_override(self):
+        proxy = MagicMock()
+        result = MagicMock()
+        result.success = True
+        result.response = "Explanation"
+        proxy.handle_request.return_value = {"result": result}
 
-    def test_loop_logic(self):
-        lines = ["+    for item in items:"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Loop logic" in text
+        annotator = DiffAnnotator(proxy)
+        annotator.annotate("test.py", ["+x = 1"])
 
-    def test_error_handling(self):
-        lines = ["+    try:"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Error handling" in text
-        assert conf == 0.8
+        call_args = proxy.handle_request.call_args
+        assert call_args.kwargs.get("task_override") == "code_explanation"
 
-    def test_removed_import(self):
-        lines = ["-import deprecated_module"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Import" in text
-        assert "removed" in text.lower()
-        assert conf == 0.95
+    def test_annotate_llm_failure_falls_back(self):
+        proxy = MockProxy(success=False)
+        annotator = DiffAnnotator(proxy)
+        text, conf = annotator.annotate("test.py", ["+x = 1"])
+        # Fallback heuristic returns 0.5 confidence
+        assert conf == 0.5
 
-    def test_removed_class(self):
-        lines = ["-class OldClass:"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Class definition" in text
-        assert "removed" in text.lower()
+    def test_annotate_exception_falls_back(self):
+        proxy = MagicMock()
+        proxy.handle_request.side_effect = RuntimeError("Connection failed")
+        annotator = DiffAnnotator(proxy)
+        text, conf = annotator.annotate("test.py", ["+x = 1"])
+        assert conf == 0.5
 
-    def test_added_lines_checked_before_removed(self):
-        """When both added and removed have patterns, added should win."""
-        lines = ["+def new_fn():", "-class OldClass:"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Function definition" in text  # added pattern wins
+    def test_annotate_strips_whitespace(self):
+        proxy = MockProxy(response_text="  Trimmed response  ")
+        annotator = DiffAnnotator(proxy)
+        text, conf = annotator.annotate("test.py", ["+x = 1"])
+        assert text == "Trimmed response"
 
-    def test_confidence_varies_by_pattern(self):
-        """Different patterns should have different confidence scores."""
-        import_text, import_conf = self.annotator.annotate_lines(["+import os"])
-        func_text, func_conf = self.annotator.annotate_lines(["+def foo():"])
-        cond_text, cond_conf = self.annotator.annotate_lines(["+if True:"])
-        assert import_conf > func_conf > cond_conf
 
-    def test_indented_patterns_matched(self):
-        """Patterns should match even with leading whitespace."""
-        lines = ["+    def indented_function():"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "Function definition" in text
+class TestFallbackHeuristic:
+    """Tests for the _fallback_heuristic method."""
 
-    def test_many_plain_additions(self):
-        lines = [f"+line_{i} = {i}" for i in range(20)]
-        text, conf = self.annotator.annotate_lines(lines)
+    def setup_method(self):
+        self.proxy = MockProxy()
+        self.annotator = DiffAnnotator(self.proxy)
+
+    def test_pure_additions(self):
+        text, conf = self.annotator._fallback_heuristic(["+x = 1", "+y = 2"])
+        assert "Added 2 line(s)" in text
+        assert conf == 0.5
+
+    def test_pure_removals(self):
+        text, conf = self.annotator._fallback_heuristic(["-x = 1", "-y = 2", "-z = 3"])
+        assert "Removed 3 line(s)" in text
+        assert conf == 0.5
+
+    def test_mixed_changes(self):
+        text, conf = self.annotator._fallback_heuristic(["-old = 1", "+new = 2"])
+        assert "Modified" in text
+        assert conf == 0.5
+
+    def test_single_addition(self):
+        text, conf = self.annotator._fallback_heuristic(["+import os"])
+        assert "Added 1 line(s)" in text
+
+    def test_single_removal(self):
+        text, conf = self.annotator._fallback_heuristic(["-import os"])
+        assert "Removed 1 line(s)" in text
+
+    def test_many_additions(self):
+        lines = [f"+line_{i}" for i in range(20)]
+        text, conf = self.annotator._fallback_heuristic(lines)
         assert "Added 20 line(s)" in text
-        assert conf == 0.6
 
-    def test_many_plain_removals(self):
+    def test_many_removals(self):
         lines = [f"-line_{i}" for i in range(15)]
-        text, conf = self.annotator.annotate_lines(lines)
+        text, conf = self.annotator._fallback_heuristic(lines)
         assert "Removed 15 line(s)" in text
 
-    def test_context_lines_ignored(self):
-        """Lines starting with space (context) should not affect detection."""
-        lines = [" context line", " another context"]
-        text, conf = self.annotator.annotate_lines(lines)
-        assert "No changes" in text
+    def test_context_lines_not_counted(self):
+        """Context lines (space prefix) should not affect added/removed counts."""
+        lines = [" context", "+added"]
+        text, conf = self.annotator._fallback_heuristic(lines)
+        assert "Added 1 line(s)" in text
+
+    def test_empty_lines_returns_modified(self):
+        """Empty list with no +/- lines returns Modified logic."""
+        text, conf = self.annotator._fallback_heuristic([])
+        assert "Modified" in text

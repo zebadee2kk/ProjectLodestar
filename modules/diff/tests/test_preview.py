@@ -1,6 +1,8 @@
 """Tests for the DiffPreview module."""
 
 import pytest
+from io import StringIO
+from rich.console import Console
 from modules.diff.preview import DiffPreview, DiffBlock
 
 
@@ -26,6 +28,14 @@ def preview():
     p = DiffPreview({"enabled": True})
     p.start()
     return p
+
+
+def capture_render(preview_obj, blocks):
+    """Helper to capture Rich render output as a string."""
+    buf = StringIO()
+    preview_obj.console = Console(file=buf, force_terminal=True, width=120)
+    preview_obj.render(blocks)
+    return buf.getvalue()
 
 
 class TestDiffPreviewLifecycle:
@@ -113,66 +123,54 @@ class TestAnnotation:
         assert block.confidence == 1.0
 
 
-class TestFormatting:
+class TestRendering:
+    """Tests for Rich-based render() method."""
 
-    def test_format_basic_block(self, preview):
+    def test_render_shows_file_path(self, preview):
         block = DiffBlock(
-            file_path="test.py",
-            old_start=1,
-            new_start=1,
+            file_path="test.py", old_start=1, new_start=1,
             lines=["+import os"],
         )
-        output = preview.format_block(block)
+        output = capture_render(preview, [block])
         assert "test.py" in output
-        assert "+import os" in output
 
-    def test_format_with_annotation(self, preview):
+    def test_render_shows_annotation(self, preview):
         block = DiffBlock(
-            file_path="test.py",
-            old_start=1,
-            new_start=1,
+            file_path="test.py", old_start=1, new_start=1,
             lines=["+import os"],
             annotation="Added os import",
             confidence=0.9,
         )
-        output = preview.format_block(block)
-        assert "AI" in output
-        assert "90%" in output
+        output = capture_render(preview, [block])
         assert "Added os import" in output
 
-    def test_format_without_annotation(self, preview):
+    def test_render_no_annotation(self, preview):
         block = DiffBlock(
-            file_path="test.py",
-            old_start=1,
-            new_start=1,
+            file_path="test.py", old_start=1, new_start=1,
             lines=["+x = 1"],
         )
-        output = preview.format_block(block)
-        assert "AI" not in output
+        output = capture_render(preview, [block])
+        assert "AI:" not in output
 
-    def test_format_annotation_without_confidence(self, preview):
-        block = DiffBlock(
-            file_path="test.py",
-            old_start=1,
-            new_start=1,
-            lines=["+x = 1"],
-            annotation="Some annotation",
-            confidence=None,
-        )
-        output = preview.format_block(block)
-        assert "AI:" in output
-        assert "%" not in output
-
-    def test_format_empty_lines(self, preview):
+    def test_render_empty_lines(self, preview):
         block = DiffBlock(file_path="test.py", old_start=1, new_start=1, lines=[])
-        output = preview.format_block(block)
+        output = capture_render(preview, [block])
         assert "test.py" in output
 
-    def test_format_shows_line_numbers(self, preview):
+    def test_render_shows_line_numbers(self, preview):
         block = DiffBlock(file_path="f.py", old_start=42, new_start=50, lines=["+x"])
-        output = preview.format_block(block)
+        output = capture_render(preview, [block])
         assert "42" in output
         assert "50" in output
+
+    def test_render_multiple_blocks(self, preview):
+        blocks = [
+            DiffBlock(file_path="a.py", old_start=1, new_start=1, lines=["+x"]),
+            DiffBlock(file_path="b.py", old_start=5, new_start=5, lines=["-y"]),
+        ]
+        output = capture_render(preview, blocks)
+        assert "a.py" in output
+        assert "b.py" in output
 
 
 class TestMultiFileDiff:
@@ -206,10 +204,8 @@ diff --git a/bar.py b/bar.py
 
     def test_each_block_has_own_lines(self, preview):
         blocks = preview.parse_unified_diff(self.MULTI_FILE_DIFF)
-        # foo.py block has +import os
         foo_added = [l for l in blocks[0].lines if l.startswith("+")]
         assert any("import os" in l for l in foo_added)
-        # bar.py block has -old and +new, +extra
         bar_added = [l for l in blocks[1].lines if l.startswith("+")]
         assert len(bar_added) == 2
 

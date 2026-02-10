@@ -36,6 +36,7 @@ def proxy(tmp_path):
     )
 
     p = LodestarProxy(config_dir=str(config_dir), event_bus=EventBus())
+    p.cache.clear()  # Ensure clean cache for each test
     p.start()
     yield p
     p.stop()

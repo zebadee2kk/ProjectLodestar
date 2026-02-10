@@ -15,7 +15,7 @@ class HealthChecker(LodestarPlugin):
         super().__init__(config)
         self.event_bus = event_bus
         self.router_url = config.get("router_url", "http://localhost:4000")
-        self.ollama_url = config.get("ollama_url", "http://192.168.120.211:11434")
+        self.ollama_url = config.get("ollama_url", "http://localhost:11434")
         self._last_status: Dict[str, Any] = {}
 
     def start(self) -> None:

@@ -41,7 +41,6 @@ class WorkbenchOrchestrator:
         self.memory.start()
         self.context.start()
         self.knowledge.start()
-        self.proxy.start()
         logger.info("WorkbenchOrchestrator started")
 
     def stop(self) -> None:
@@ -49,7 +48,6 @@ class WorkbenchOrchestrator:
         self.memory.stop()
         self.context.stop()
         self.knowledge.stop()
-        self.proxy.stop()
         logger.info("WorkbenchOrchestrator stopped")
 
     def process_request(self, prompt: str, session_id: Optional[str] = None) -> Dict[str, Any]:

@@ -41,6 +41,9 @@ class LodestarProxy:
     ) -> None:
         self.config_dir = Path(config_dir)
         self.event_bus = event_bus or EventBus()
+        self._started = False
+        self._stopped = False
+        
         self._load_configs()
 
         self.router = SemanticRouter(self._routing_config)
@@ -110,6 +113,11 @@ class LodestarProxy:
 
     def start(self) -> None:
         """Start all modules."""
+        if getattr(self, "_started", False):
+            return
+        self._started = True
+        self._stopped = False
+        
         self.router.start()
         self.cost_tracker.start()
         self.health_checker.start()
@@ -118,6 +126,11 @@ class LodestarProxy:
 
     def stop(self) -> None:
         """Stop all modules gracefully."""
+        if getattr(self, "_stopped", False):
+            return
+        self._stopped = True
+        self._started = False
+        
         self.router.stop()
         self.cost_tracker.stop()
         self.health_checker.stop()
